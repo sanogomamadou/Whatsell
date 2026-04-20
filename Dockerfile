@@ -8,12 +8,17 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/shared/package.json ./packages/shared/
 
-RUN pnpm install --frozen-lockfile
-
-COPY apps/api ./apps/api
-COPY packages/shared ./packages/shared
+COPY apps/api/prisma ./apps/api/prisma
 
 ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
+
+RUN pnpm install --frozen-lockfile
+
+COPY apps/api/src ./apps/api/src
+COPY apps/api/tsconfig.json apps/api/tsconfig.build.json apps/api/nest-cli.json ./apps/api/
+COPY apps/api/prisma.config.ts ./apps/api/
+COPY packages/shared/src ./packages/shared/src
+COPY packages/shared/tsconfig.json ./packages/shared/
 
 RUN pnpm --filter @whatsell/api build
 
