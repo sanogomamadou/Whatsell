@@ -11,7 +11,7 @@ COPY packages/shared/package.json ./packages/shared/
 COPY apps/api/prisma ./apps/api/prisma
 
 ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
-ENV CACHE_BUST=2
+ENV CACHE_BUST=3
 
 RUN pnpm install --frozen-lockfile
 
@@ -21,7 +21,12 @@ COPY apps/api/prisma.config.ts ./apps/api/
 COPY packages/shared/src ./packages/shared/src
 COPY packages/shared/tsconfig.json ./packages/shared/
 
-RUN pnpm --filter @whatsell/api build
+WORKDIR /app/apps/api
+RUN pnpm build
+RUN ls -la dist/ || echo "ERROR: dist/ does not exist"
+RUN ls -la dist/main.js || echo "ERROR: dist/main.js does not exist"
+
+WORKDIR /app
 
 EXPOSE 3001
 
