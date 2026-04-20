@@ -13,8 +13,10 @@ RUN pnpm install --frozen-lockfile
 COPY apps/api ./apps/api
 COPY packages/shared ./packages/shared
 
-RUN pnpm --filter @whatsell/api exec prisma generate
+WORKDIR /app/apps/api
+RUN npx prisma generate
 
+WORKDIR /app
 RUN pnpm --filter @whatsell/api build
 
 EXPOSE 3001
