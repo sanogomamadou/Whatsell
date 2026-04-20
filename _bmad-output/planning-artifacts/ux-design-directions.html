@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Whatsell — Directions de Design UX</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #6366F1;
+    --primary-hover: #4F46E5;
+    --primary-light: #EEF2FF;
+    --agent: #10B981;
+    --agent-light: #D1FAE5;
+    --bg: #F8FAFC;
+    --surface: #FFFFFF;
+    --border: #E2E8F0;
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-muted: #94A3B8;
+    --warning: #F59E0B;
+    --error: #EF4444;
+    --info: #3B82F6;
+    --status-pending: #94A3B8;
+    --status-confirmed: #6366F1;
+    --status-prep: #F59E0B;
+    --status-shipped: #3B82F6;
+    --status-delivered: #10B981;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #1E1E2E; color: var(--text-primary); }
+
+  /* ===== PAGE HEADER ===== */
+  .page-header {
+    background: linear-gradient(135deg, #1E1E2E 0%, #2D2B55 100%);
+    color: white;
+    padding: 48px 32px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .page-header h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+  .page-header p { color: rgba(255,255,255,0.6); font-size: 16px; }
+  .page-header .badge {
+    display: inline-block;
+    background: var(--primary);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 16px;
+  }
+
+  /* ===== DIRECTION SELECTOR ===== */
+  .direction-nav {
+    background: #2D2B55;
+    padding: 16px 32px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .dir-btn {
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.7);
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+    font-family: 'Inter', sans-serif;
+  }
+  .dir-btn:hover, .dir-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+  }
+
+  /* ===== DIRECTIONS CONTAINER ===== */
+  .directions-wrapper { padding: 40px 32px; }
+  .direction { display: none; }
+  .direction.active { display: block; }
+
+  .direction-header {
+    text-align: center;
+    margin-bottom: 32px;
+    color: white;
+  }
+  .direction-header h2 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+  .direction-header p { color: rgba(255,255,255,0.6); font-size: 15px; max-width: 600px; margin: 0 auto; }
+  .direction-header .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-right: 6px;
+    margin-bottom: 12px;
+  }
+
+  /* ===== MOCKUP GRID ===== */
+  .mockup-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 32px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .mockup-frame {
+    background: #2D2B55;
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .mockup-frame h3 {
+    color: rgba(255,255,255,0.7);
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* ===== PHONE FRAME ===== */
+  .phone {
+    width: 360px;
+    min-height: 640px;
+    background: var(--bg);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+    margin: 0 auto;
+    position: relative;
+  }
+
+  /* ===== STATUS BAR ===== */
+  .status-bar {
+    background: var(--surface);
+    padding: 8px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ===== TOP NAV ===== */
+  .top-nav {
+    background: var(--surface);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .top-nav-title { font-size: 18px; font-weight: 700; color: var(--text-primary); }
+  .top-nav-back {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--primary);
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  /* ===== AGENT STATUS BANNER ===== */
+  .agent-banner {
+    background: var(--agent-light);
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #065F46;
+    font-weight: 500;
+  }
+  .agent-dot { width: 8px; height: 8px; background: var(--agent); border-radius: 50%; flex-shrink: 0; }
+  .agent-dot.pulse { animation: pulse 2s infinite; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* ===== HOME SCREEN STATS ===== */
+  .home-stats {
+    padding: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 14px;
+    border: 1px solid var(--border);
+  }
+  .stat-card.accent { background: var(--primary-light); border-color: #C7D2FE; }
+  .stat-card.full { grid-column: 1 / -1; }
+  .stat-label { font-size: 11px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .stat-value { font-size: 24px; font-weight: 700; color: var(--text-primary); }
+  .stat-value.primary { color: var(--primary); }
+  .stat-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+  /* ===== ORDER LIST ===== */
+  .section-header {
+    padding: 12px 16px 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .order-list { padding: 0 16px; display: flex; flex-direction: column; gap: 10px; }
+  .order-card {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .order-card:hover { border-color: var(--primary); }
+  .order-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .order-id { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+  .order-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .badge-pending { background: #F1F5F9; color: var(--status-pending); }
+  .badge-confirmed { background: var(--primary-light); color: var(--status-confirmed); }
+  .badge-prep { background: #FFFBEB; color: var(--status-prep); }
+  .badge-shipped { background: #EFF6FF; color: var(--status-shipped); }
+  .badge-delivered { background: var(--agent-light); color: var(--status-delivered); }
+  .order-product { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+  .order-meta { font-size: 13px; color: var(--text-secondary); }
+  .order-bottom { display: flex; justify-content: space-between; align-items: center; }
+  .order-amount { font-size: 18px; font-weight: 700; color: var(--text-primary); }
+  .order-client { font-size: 12px; color: var(--text-secondary); }
+  .order-ai-badge {
+    font-size: 11px;
+    color: var(--agent);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* ===== ORDER DETAIL ===== */
+  .order-detail-body { padding: 16px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+  .ai-created-banner {
+    background: var(--agent-light);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #065F46;
+    font-weight: 500;
+  }
+  .receipt-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .receipt-header {
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: #F8FAFC;
+    border-bottom: 1px solid var(--border);
+  }
+  .receipt-image {
+    background: linear-gradient(135deg, #FFF7ED, #FEF3C7);
+    height: 140px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #92400E;
+    font-weight: 600;
+  }
+  .receipt-image .icon { font-size: 28px; }
+  .receipt-amount {
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .receipt-amount-value { font-size: 20px; font-weight: 700; color: var(--agent); }
+  .receipt-amount-label { font-size: 12px; color: var(--text-secondary); }
+
+  .info-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .info-row {
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-key { color: var(--text-secondary); font-weight: 500; }
+  .info-val { color: var(--text-primary); font-weight: 600; text-align: right; }
+
+  .cta-area {
+    padding: 0 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .btn-primary {
+    width: 100%;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: 'Inter', sans-serif;
+  }
+  .btn-secondary {
+    width: 100%;
+    background: transparent;
+    color: var(--error);
+    border: 1px solid #FECACA;
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* ===== BOTTOM NAV ===== */
+  .bottom-nav {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    padding: 8px 0 12px;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 0;
+    position: relative;
+  }
+  .nav-icon { font-size: 20px; }
+  .nav-label { font-size: 10px; font-weight: 500; color: var(--text-muted); }
+  .nav-item.active .nav-icon { filter: none; }
+  .nav-item.active .nav-label { color: var(--primary); }
+  .nav-badge {
+    position: absolute;
+    top: 2px;
+    right: 18px;
+    background: var(--error);
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ===== ONBOARDING ===== */
+  .onboarding-body { padding: 20px 16px; }
+  .onboarding-progress { margin-bottom: 24px; }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+  .progress-label span:first-child { color: var(--text-primary); }
+  .progress-label span:last-child { color: var(--text-muted); }
+  .progress-bar-track {
+    height: 6px;
+    background: var(--border);
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 9999px;
+    transition: width 0.3s;
+  }
+  .step-list { display: flex; flex-direction: column; gap: 12px; }
+  .step-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .step-item.completed { border-color: var(--agent); background: var(--agent-light); }
+  .step-item.active { border-color: var(--primary); background: var(--primary-light); }
+  .step-num {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .step-num.completed { background: var(--agent); color: white; }
+  .step-num.active { background: var(--primary); color: white; }
+  .step-content { flex: 1; }
+  .step-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .step-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+  /* ===== DIRECTION A : CARDS ÉPURÉES ===== */
+
+  /* ===== DIRECTION B : DENSE EFFICIENCY ===== */
+  .dense-order-list { padding: 0 16px; display: flex; flex-direction: column; gap: 0; }
+  .dense-order-row {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .dense-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .dense-content { flex: 1; min-width: 0; }
+  .dense-product { font-size: 14px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dense-meta { font-size: 12px; color: var(--text-secondary); }
+  .dense-right { text-align: right; flex-shrink: 0; }
+  .dense-amount { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+  .dense-time { font-size: 11px; color: var(--text-muted); }
+
+  /* ===== DIRECTION C : HERO STATS ===== */
+  .hero-stats-top {
+    background: linear-gradient(135deg, var(--primary) 0%, #4F46E5 100%);
+    padding: 20px 16px;
+    color: white;
+  }
+  .hero-greeting { font-size: 14px; font-weight: 400; opacity: 0.8; margin-bottom: 4px; }
+  .hero-main-stat { font-size: 36px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+  .hero-sub { font-size: 13px; opacity: 0.7; }
+  .hero-chips { display: flex; gap: 8px; margin-top: 14px; }
+  .hero-chip {
+    background: rgba(255,255,255,0.15);
+    border-radius: 9999px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .hero-chip.alert { background: rgba(239,68,68,0.3); }
+
+  /* ===== DIRECTION D : SPLIT PANEL CONVERSATION ===== */
+  .conv-list { padding: 0; }
+  .conv-item {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 12px;
+    background: var(--surface);
+  }
+  .conv-item.unread { background: var(--primary-light); }
+  .conv-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+    font-size: 14px;
+  }
+  .conv-body { flex: 1; min-width: 0; }
+  .conv-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+  .conv-name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .conv-time { font-size: 11px; color: var(--text-muted); }
+  .conv-preview { font-size: 13px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .conv-ai-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: var(--agent-light);
+    color: var(--agent);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 9999px;
+    margin-top: 4px;
+  }
+
+  /* ===== SUCCESS STATE ===== */
+  .success-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    gap: 16px;
+    text-align: center;
+    min-height: 400px;
+  }
+  .success-icon {
+    width: 72px;
+    height: 72px;
+    background: var(--agent-light);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+  }
+  .success-title { font-size: 20px; font-weight: 700; color: var(--text-primary); }
+  .success-sub { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+  .success-detail {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 20px;
+    width: 100%;
+    text-align: left;
+  }
+  .success-detail-row { display: flex; justify-content: space-between; font-size: 14px; padding: 4px 0; }
+  .success-detail-row .key { color: var(--text-secondary); }
+  .success-detail-row .val { font-weight: 600; color: var(--text-primary); }
+
+  /* ===== DIRECTION E: ANALYTICS ===== */
+  .analytics-header { padding: 16px; }
+  .period-tabs {
+    display: flex;
+    background: #F1F5F9;
+    border-radius: 10px;
+    padding: 3px;
+    margin-bottom: 16px;
+  }
+  .period-tab {
+    flex: 1;
+    text-align: center;
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+  .period-tab.active { background: var(--surface); color: var(--primary); font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+  .chart-area {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 0 16px;
+  }
+  .chart-title { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; }
+  .chart-big-number { font-size: 28px; font-weight: 700; color: var(--text-primary); }
+  .chart-sub { font-size: 12px; color: var(--agent); font-weight: 500; margin-top: 2px; }
+  .mini-bars { display: flex; align-items: flex-end; gap: 4px; height: 60px; margin-top: 16px; }
+  .mini-bar { flex: 1; background: var(--primary-light); border-radius: 4px 4px 0 0; min-height: 8px; }
+  .mini-bar.active { background: var(--primary); }
+  .top-products { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .product-rank {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+  }
+  .rank-num { font-size: 16px; font-weight: 700; color: var(--text-muted); width: 24px; }
+  .rank-info { flex: 1; }
+  .rank-name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .rank-sales { font-size: 12px; color: var(--text-secondary); }
+  .rank-amount { font-size: 15px; font-weight: 700; color: var(--primary); }
+
+  /* ===== DIRECTION F: AGENT CONVERSATIONS ===== */
+  .chat-area { padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; flex: 1; overflow-y: auto; }
+  .chat-msg { max-width: 80%; }
+  .chat-msg.client { align-self: flex-start; }
+  .chat-msg.agent { align-self: flex-end; }
+  .chat-bubble {
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  .client .chat-bubble { background: var(--surface); border: 1px solid var(--border); color: var(--text-primary); border-bottom-left-radius: 4px; }
+  .agent .chat-bubble { background: var(--primary); color: white; border-bottom-right-radius: 4px; }
+  .chat-meta { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .agent .chat-meta { text-align: right; }
+  .agent-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--agent);
+    font-weight: 500;
+  }
+  .takeover-bar {
+    background: #FFF7ED;
+    border-top: 1px solid #FED7AA;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+  }
+  .takeover-text { color: #92400E; font-weight: 500; }
+  .takeover-btn {
+    background: var(--warning);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* ===== SCROLLBAR ===== */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="badge">Direction Design UX</div>
+  <h1>Whatsell — Explorations Visuelles</h1>
+  <p>6 directions de design basées sur la palette Indigo + Émeraude · Mobile-first 360px · Tailwind CSS + shadcn/ui</p>
+</div>
+
+<div class="direction-nav">
+  <button class="dir-btn active" onclick="showDirection('a')">A — Cards Épurées</button>
+  <button class="dir-btn" onclick="showDirection('b')">B — Dense & Efficace</button>
+  <button class="dir-btn" onclick="showDirection('c')">C — Hero Stats</button>
+  <button class="dir-btn" onclick="showDirection('d')">D — Conversations</button>
+  <button class="dir-btn" onclick="showDirection('e')">E — Analytics</button>
+  <button class="dir-btn" onclick="showDirection('f')">F — Onboarding</button>
+</div>
+
+<div class="directions-wrapper">
+
+  <!-- ===== DIRECTION A : CARDS ÉPURÉES ===== -->
+  <div class="direction active" id="dir-a">
+    <div class="direction-header">
+      <span class="tag" style="background:#EEF2FF;color:#6366F1;">Layout Prioritaire</span>
+      <span class="tag" style="background:#D1FAE5;color:#065F46;">Familier</span>
+      <h2>Direction A — Cards Épurées</h2>
+      <p>Dashboard centré sur les commandes. Cards blanches aérées. Accent indigo sur les éléments clés. Statut agent toujours visible.</p>
+    </div>
+    <div class="mockup-grid">
+
+      <!-- Ecran 1: Dashboard accueil -->
+      <div class="mockup-frame">
+        <h3>📱 Accueil — Dashboard</h3>
+        <div class="phone">
+          <div class="status-bar"><span>09:41</span><span>●●● 5G 🔋</span></div>
+          <div class="top-nav">
+            <div class="top-nav-title">Bonjour Boubacar 👋</div>
+            <div style="width:32px;height:32px;background:var(--primary-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--primary);">B</div>
+          </div>
+          <div class="agent-banner">
+            <div class="agent-dot pulse"></div>
+            <span>Votre agent est actif · 3 conversations en cours</span>
+          </div>
+          <div class="home-stats">
+            <div class="stat-card accent">
+              <div class="stat-label">En attente</div>
+              <div class="stat-value primary">4</div>
+              <div class="stat-sub">commandes à confirmer</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Aujourd'hui</div>
+              <div class="stat-value">87 500</div>
+              <div class="stat-sub">FCFA · 5 commandes</div>
+            </div>
+            <div class="stat-card full">
+              <div class="stat-label">Ce mois</div>
+              <div class="stat-value">1 240 000 FCFA</div>
+              <div class="stat-sub" style="color:var(--agent);font-weight:500;">↑ +23% vs mois dernier</div>
+            </div>
+          </div>
+          <div class="section-header">Commandes récentes</div>
+          <div class="order-list">
+            <div class="order-card">
+              <div class="order-top">
+                <span class="order-id">#251</span>
+                <span class="order-badge badge-pending">⏳ En attente</span>
+              </div>
+              <div class="order-product">Nike Air Force 1</div>
+              <div class="order-meta">Taille 42 · Fatoumata D.</div>
+              <div class="order-bottom">
+                <span class="order-amount">28 000 FCFA</span>
+                <span class="order-ai-badge">🤖 IA · il y a 12 min</span>
+              </div>
+            </div>
+            <div class="order-card">
+              <div class="order-top">
+                <span class="order-id">#250</span>
+                <span class="order-badge badge-confirmed">✓ Confirmée</span>
+              </div>
+              <div class="order-product">Jordan 1 Retro</div>
+              <div class="order-meta">Taille 40 · Mamadou K.</div>
+              <div class="order-bottom">
+                <span class="order-amount">35 000 FCFA</span>
+                <span class="order-ai-badge">🤖 IA · 08h30</span>
+              </div>
+            </div>
+          </div>
+          <div style="height:70px;"></div>
+          <div class="bottom-nav" style="position:sticky;bottom:0;">
+            <div class="nav-item active">
+              <div class="nav-icon">🏠</div>
+              <div class="nav-label" style="color:var(--primary);">Accueil</div>
+            </div>
+            <div class="nav-item">
+              <div class="nav-badge">4</div>
+              <div class="nav-icon">📦</div>
+              <div class="nav-label">Commandes</div>
+            </div>
+            <div class="nav-item">
+              <div class="nav-badge">3</div>
+              <div class="nav-icon">💬</div>
+              <div class="nav-label">Convs.</div>
+            </div>
+            <div class="nav-item">
+              <div class="nav-icon">🛍</div>
+              <div class="nav-label">Catalogue</div>
+            </div>
+            <div class="nav-item">
+              <div class="nav-icon">⋯</div>
+              <div class="nav-label">Plus</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ecran 2: Fiche commande -->
+      <div class="mockup-frame">
+        <h3>📱 Fiche Commande — Vérification</h3>
+        <div class="phone">
+          <div class="status-bar"><span>09:41</span><span>●●● 5G 🔋</span></div>
+          <div class="top-nav">
+            <div class="top-nav-back">← Commandes</div>
+            <div class="top-nav-title">Commande #251</div>
+          </div>
+          <div class="order-detail-body" style="max-height:500px;overflow-y:auto;">
+            <div class="ai-created-banner">
+              <span>🤖</span>
+              <span>Créée par votre agent · aujourd'hui à 09h28</span>
+            </div>
+            <div class="receipt-section">
+              <div class="receipt-header">Justificatif de paiement</div>
+              <div class="receipt-image">
+                <div class="icon">🧾</div>
+                <div>Reçu Orange Money</div>
+                <div style="font-size:11px;font-weight:400;color:#B45309;">Appuyer pour agrandir</div>
+              </div>
+              <div class="receipt-amount">
+                <div>
+                  <div class="receipt-amount-label">Avance reçue</div>
+                  <div class="receipt-amount-value">14 000 FCFA</div>
+                </div>
+                <div style="text-align:right;">
+                  <div class="receipt-amount-label">Via</div>
+                  <div style="font-size:13px;font-weight:600;color:#D97706;">Orange Money</div>
+                </div>
+              </div>
+            </div>
+            <div class="info-section">
+              <div class="receipt-header">Commande</div>
+              <div class="info-row"><span class="info-key">Produit</span><span class="info-val">Nike Air Force 1</span></div>
+              <div class="info-row"><span class="info-key">Taille</span><span class="info-val">42</span></div>
+              <div class="info-row"><span class="info-key">Total</span><span class="info-val" style="color:var(--text-primary);font-size:18px;">28 000 FCFA</span></div>
+              <div class="info-row"><span class="info-key">Avance</span><span class="info-val" style="color:var(--agent);">14 000 FCFA ✓</span></div>
+              <div class="info-row"><span class="info-key">Reste</span><span class="info-val">14 000 FCFA</span></div>
+            </div>
+            <div class="info-section">
+              <div class="receipt-header">Client & Livraison</div>
+              <div class="info-row"><span class="info-key">Nom</span><span class="info-val">Fatoumata D.</span></div>
+              <div class="info-row"><span class="info-key">Tél.</span><span class="info-val">+223 76 XX XX XX</span></div>
+              <div class="info-row"><span class="info-key">Adresse</span><span class="info-val" style="font-size:13px;">Hamdallaye ACI 2000</span></div>
+            </div>
+          </div>
+          <div class="cta-area">
+            <button class="btn-primary">✓ Confirmer la commande</button>
+            <button class="btn-secondary">⚠ Signaler un problème</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ecran 3: Confirmation succès -->
+      <div class="mockup-frame">
+        <h3>📱 Confirmation Réussie</h3>
+        <div class="phone">
+          <div class="status-bar"><span>09:41</span><span>●●● 5G 🔋</span></div>
+          <div class="top-nav">
+            <div class="top-nav-back">← Commandes</div>
+            <div class="top-nav-title">Commande #251</div>
+          </div>
+          <div class="success-screen">
+            <div class="success-icon">✓</div>
+            <div class="success-title">Commande confirmée !</div>
+            <div class="success-sub">Fatoumata a été notifiée automatiquement par votre agent.</div>
+            <div class="success-detail">
+              <div class="success-detail-row"><span class="key">Commande</span><span class="val">#251 — Nike AF1</span></div>
+              <div class="success-detail-row"><span class="key">Montant</span><span class="val">28 000 FCFA</span></div>
+              <div class="success-detail-row"><span class="key">Statut</span><span class="val" style="color:var(--status-confirmed);">✓ Confirmée</span></div>
+            </div>
+            <button class="btn-primary" style="width:100%;margin-top:8px;">Voir toutes les commandes</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== DIRECTION B : DENSE & EFFICACE ===== -->
+  <div class="direction" id="dir-b">
+    <div class="direction-header">
+      <span class="tag" style="background:#FEF3C7;color:#92400E;">Haute Densité</span>
+      <span class="tag" style="background:#F1F5F9;color:#475569;">Efficacité</span>
+      <h2>Direction B — Dense & Efficace</h2>
+      <p>Plus d'informations visibles, style liste compact. Idéal pour les vendeurs avec beaucoup de commandes. Moins d'espace blanc, plus de données à portée de vue.</p>
+    </div>
+    <div class="mockup-grid">
+
+      <div class="mockup-frame">
+        <h3>📱 Accueil — Vue Dense</h3>
+        <div class="phone">
+          <div class="status-bar"><span>09:41</span><span>●●● 5G 🔋</span></div>
+          <div style="background:var(--primary);padding:14px 16px;color:white;">
+            <div style="font-size:12px;opacity:0.8;margin-bottom:2px;">Bonjour Boubacar · Boutique Sneakers BMK</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-size:22px;font-weight:700;">1 240 000 FCFA</div>
+                <div style="font-size:12px;opacity:0.7;">CA du mois · 47 commandes</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="background:rgba(255,255,255,0.2);border-radius:20px;padding:4px 10px;font-size:12px;font-weight:500;">🤖 Actif</div>
+                <div style="font-size:11px;opacity:0.7;margin-top:4px;">3 convs. actives</div>
+              </div>
+            </div>
+          </div>
+          <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;gap:16px;">
+            <div style="text-align:center;">
+              <div style="font-size:18px;font-weight:700;color:var(--error);">4</div>
+              <div style="font-size:11px;color:var(--text-muted);">En attente</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-size:18px;font-weight:700;color:var(--status-confirmed);">8</div>
+              <div style="font-size:11px;color:var(--text-muted);">Confirmées</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-size:18px;font-weight:700;color:var(--status-prep);">3</div>
+              <div style="font-size:11px;color:var(--text-muted);">En prépa.</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-size:18px;font-weight:700;color:var(--status-shipped);">2</div>
+              <div style="font-size:11px;color:var(--text-muted);">Expédiées</div>
+            </div>
+          </div>
+          <div class="section-header">Nouvelles commandes IA</div>
+          <div class="dense-order-list">
+            <div class="dense-order-row">
+              <div class="dense-dot" style="background:var(--status-pending);"></div>
+              <div class="dense-content">
+                <div class="dense-product">Nike Air Force 1 · T42</div>
+                <div class="dense-meta">#251 · Fatoumata D. · 🤖 09h28</div>
+              </div>
+              <div class="dense-right">
+                <div class="dense-amount">28 000</div>
+                <div class="dense-time">FCFA</div>
+              </div>
+            </div>
+            <div class="dense-order-row">
+              <div class="dense-dot" style="background:var(--status-pending);"></div>
+              <div class="dense-content">
+                <div class="dense-product">Jordan 1 Retro · T40</div>
+                <div class="dense-meta">#250 · Seydou T. · 🤖 08h15</div>
+              </div>
+              <div class="dense-right">
+                <div class="dense-amount">35 000</div>
+                <div class="dense-time">FCFA</div>
+              </div>
+            </div>
+            <div class="dense-order-row">
+              <div class="dense-dot" style="background:var(--status-pending);"></div>
+              <div class="dense-content">
+                <div class="dense-product">Adidas Yeezy · T43</div>
+                <div class="dense-meta">#249 · Aminata K. · 🤖 07h52</div>
+              </div>
+              <div class="dense-right">
+                <div class="dense-amount">52 000</div>
+                <div class="dense-time">FCFA</div>
+              </div>
+            </div>
+            <div class="dense-order-row">
+              <div class="dense-dot" style="background:var(--warning);"></div>
+              <div class="dense-content">
+                <div class="dense-product">New Balance 574 · T41</div>
+                <div class="dense-meta">#248 · Ibrahim S. · ⚠ Intervention</div>
+              </div>
+              <div class="dense-right">
+                <div class="dense-amount">29 000</div>
+                <div class="dense-time">FCFA</div>
+              </div>
+            </div>
+          </div>
+          <div style="height:60px;"></div>
+          <div class="bottom-nav" style="position:sticky;bottom:0;">
+            <div class="nav-item active"><div class="nav-icon">🏠</div><div class="nav-label" style="color:var(--primary);">Accueil</div></div>
+            <div class="nav-item"><div class="nav-badge">4</div><div class="nav-icon">📦</div><div class="nav-label">Commandes</div></div>
+            <div class="nav-item"><div class="nav-badge">1</div><div class="nav-icon">💬</div><div class="nav-label">Convs.</div></div>
+            <div class="nav-item"><div class="nav-icon">🛍</div><div class="nav-label">Catalogue</div></div>
+            <div class="nav-item"><div class="nav-icon">⋯</div><div class="nav-label">Plus</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== DIRECTION C : HERO STATS ===== -->
+  <div class="direction" id="dir-c">
+    <div class="direction-header">
+      <span class="tag" style="background:#EEF2FF;color:#6366F1;">Visuellement Fort</span>
+      <span class="tag" style="background:#D1FAE5;color:#065F46;">Motivant</span>
+      <h2>Direction C — Hero Stats</h2>
+      <p>Header indigo avec les métriques clés en grand. Effet "tableau de bord vivant". Idéal pour créer la fierté de progression et motiver l'engagement quotidien.</p>
+    </div>
+    <div class="mockup-grid">
+
+      <div class="mockup-frame">
+        <h3>📱 Accueil — Hero Stats</h3>
+        <div class="phone">
+          <div class="status-bar" style="background:var(--primary);color:white;"><span>09:41</span><span>●●● 5G 🔋</span></div>
+          <div class="hero-stats-top">
+            <div class="hero-greeting">Bonjour Boubacar · Avril 2026</div>
+            <div class="hero-main-stat">1 240 000 FCFA</div>
+            <div class="hero-sub">Chiffre d'affaires du mois · 47 commandes</div>
+            <div class="hero-chips">
+              <div class="hero-chip">📦 4 en attente</div>
+              <div class="hero-chip">🤖 Agent actif</div>
+              <div class="hero-chip alert">⚠ 1 intervention</div>
+            </div>
+          </div>
+          <div class="section-header">À confirmer maintenant</div>
+          <div class="order-list" style="padding-bottom:80px;">
+            <div class="order-card" style="border-left:3px solid var(--primary);">
+              <div class="order-top">
+                <span class="order-id">#251 · il y a 12 min</span>
+                <span class="order-badge badge-pending">⏳ En attente</span>
+              </div>
+              <div class="order-product">Nike Air Force 1 · Taille 42</div>
+              <div class="order-bottom">
+                <span class="order-amount">28 000 FCFA</span>
+                <span style="font-size:13px;background:var(--primary);color:white;padding:6px 12px;border-radius:8px;font-weight:500;">Vérifier →</span>
+              </div>
+            </div>
+            <div class="order-card" style="border-left:3px solid var(--warning);">
+              <div class="order-top">
+                <span class="order-id">#248 · il y a 1h</span>
+                <span class="order-badge" style="background:#FFFBEB;color:#B45309;">⚠ Intervention</span>
+              </div>
+              <div class="order-product">New Balance 574 · Taille 41</div>
+              <div class="order-bottom">
+                <span class="order-amount">29 000 FCFA</span>
+                <span style="font-size:13px;background:var(--warning);color:white;padding:6px 12px;border-radius:8px;font-weight:500;">Prendre en charge</span>
+              </div>
+            </div>
+          </div>
+          <div class="bottom-nav" style="position:sticky;bottom:0;">
+            <div class="nav-item active"><div class="nav-icon">🏠</div><div class="nav-label" style="color:var(--primary);">Accueil</div></div>
+            <div class="nav-item"><div class="nav-badge">4</div><div class="nav-icon">📦</div><div class="nav-label">Commandes</div></div>
+            <div class="nav-item"><div class="nav-badge">1</div><div class="nav-icon">💬</div><div class="nav-label">Convs.</div></div>
+            <div class="nav-item"><div class="nav-icon">🛍</div><div class="nav-label">Catalogue</div></div>
+            <div class="nav-item"><div class="nav-icon">⋯</div><div class="nav-label">Plus</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== DIRECTION D : CONVERSATIONS ===== -->
+  <div class="direction" id="dir-d">
+    <div class="direction-header">
+      <span class="tag" style="background:#EEF2FF;color:#6366F1;">Conversations</span>
+      <span class="tag" style="background:#FEF3C7;color:#92400E;">Contrôle Agent</span>
+      <h2>Direction D — Vue Conversations</h2>
+      <p>Accès central aux conversations WhatsApp gérées par l'agent. Le vendeur voit en temps réel ce que fait l'IA et peut reprendre la main en un tap.</p>
+    </div>
+    <div class="mockup-grid">
+
+      <div class="mockup-frame">
+        <h3>📱 Conversations WhatsApp</h3>
+        <div class="phone">
+          <div class="status-bar"><span>09:41</span><span>●●● 5G 🔋</span></div>
+          <div class="top-nav">
+            <div class="top-nav-title">Conversations</div>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <div style="background:var(--agent-light);color:var(--agent);font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;">🤖 3 actives</div>
+            </div>
+          </div>
+          <div class="agent-banner">
+            <div class="agent-dot pulse"></div>
+            <span>Agent en cours · Répond en ~1min30</span>
+          </div>
+          <div class="conv-list">
+            <div class="conv-item unread">
+              <div class="conv-avatar" style="background:var(--primary);">F</div>
+              <div class="conv-body">
+                <div class="conv-top">
+                  <span class="conv-name">Fatoumata D.</span>
+                  <span class="conv-time">09h28</span>
+                </div>
+                <div class="conv-preview">🤖 "Parfait ! Commande enregistrée. Livraison..."</div>
+                <div class="conv-ai-indicator">🤖 Géré par l'agent · Commande créée</div>
+              </div>
+            </div>
+            <div class="conv-item" style="background:#FFF7ED;">
+              <div class="conv-avatar" style="background:var(--warning);">I</div>
+              <div class="conv-body">
+                <div class="conv-top">
+                  <span class="conv-name">Ibrahim S.</span>
+                  <span class="conv-time">08h52</span>
+                </div>
+                <div class="conv-preview">⚠ Demande remise — intervention requise</div>
+                <div class="conv-ai-indicator" style="background:#FEF3C7;color:#92400E;">⚠ Nécessite votre intervention</div>
+              </div>
+            </div>
+            <div class="conv-item">
+              <div class="conv-avatar" style="background:#8B5CF6;">S</div>
+              <div class="conv-body">
+                <div class="conv-top">
+                  <span class="conv-name">Seydou T.</span>
+                  <span class="conv-time">08h15</span>
+                </div>
+                <div class="conv-preview">🤖 "Quelle taille souhaitez-vous ? Nous avons..."</div>
+                <div class="conv-ai-indicator">🤖 Guidage variantes en cours</div>
+              </div>
+            </div>
+            <div class="conv-item">
+              <div class="conv-avatar" style="background:#3B82F6;">A</div>
+              <div class="conv-body">
+                <div class="conv-top">
+                  <span class="conv-name">Aminata K.</span>
+                  <span class="conv-time">hier</span>
+                </div>
+                <div class="conv-preview">Livraison reçue, merci beaucoup !</div>
+                <div class="conv-ai-indicator" style="background:#F1F5F9;color:#94A3B8;">Terminée · Livrée</div>
+              </div>
+            </div>
+          </div>
+          <div style="height:60px;"></div>
+          <div class="bottom-nav" style="position:sticky;bottom:0;">
+            <div class="nav-item"><div class="nav-icon">🏠</div><div class="nav-label">Accueil</div></div>
+            <div class="nav-item"><div class="nav-badge">4</div><div class="nav-icon">📦</div><div class="nav-label">Commandes</div></div>
+            <div class="nav-item active"><div class="nav-badge">1</div><div class="nav-icon">💬</div><div class="nav-label" style="color:var(--primary);">Convs.</div></div>
+            <div class="nav-item"><div class="nav-icon">🛍</div><div class="nav-label">Catalogue</div></div>
+            <div class="nav-item"><div class="nav-icon">⋯</div><div class="nav-label">Plus</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mockup-frame">
+        <h3>📱 Conversation — Vue Agent + Takeover</h3>
+        <div class="phone">
+          <div class="status-bar"><span>09:41</span><span>●●● 5G 🔋</span></div>
+          <div class="top-nav">
+            <div class="top-nav-back">← Conversations</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="conv-avatar" style="background:var(--warning);width:28px;height:28px;font-size:12px;">I</div>
+              <div style="font-size:15px;font-weight:600;">Ibrahim S.</div>
+            </div>
+          </div>
+          <div style="background:#FFF7ED;padding:6px 16px;font-size:12px;color:#92400E;font-weight:500;">⚠ L'agent a besoin de vous · Demande de remise</div>
+          <div class="chat-area" style="padding-bottom:8px;">
+            <div class="chat-msg client">
+              <div class="chat-bubble">Bonjour, je veux les New Balance 574 taille 41</div>
+              <div class="chat-meta">Ibrahim · 08h44</div>
+            </div>
+            <div class="chat-msg agent">
+              <div class="chat-bubble">Bonjour Ibrahim ! Disponible en T41. Prix : 29 000 FCFA. Avance de 50% via Orange Money. Vous confirmez ?</div>
+              <div class="chat-meta agent-indicator">🤖 Agent Whatsell · 08h45</div>
+            </div>
+            <div class="chat-msg client">
+              <div class="chat-bubble">Mon ami Seydou m'a dit que tu fais -10% pour les fidèles</div>
+              <div class="chat-meta">Ibrahim · 08h52</div>
+            </div>
+            <div class="chat-msg agent">
+              <div class="chat-bubble" style="background:var(--warning);">Je transmets votre demande à notre équipe. Un instant...</div>
+              <div class="chat-meta agent-indicator">⚠ Agent en attente de décision · 08h52</div>
+            </div>
+          </div>
+          <div class="takeover-bar">
+            <div class="takeover-text">Accordez-vous la remise ?</div>
+            <button class="takeover-btn">Prendre en charge</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== DIRECTION E : ANALYTICS ===== -->
+  <div class="direction" id="dir-e">
+    <div class="direction-header">
+      <span class="tag" style="background:#EEF2FF;color:#6366F1;">Analytics</span>
+      <span class="tag" style="background:#D1FAE5;color:#065F46;">Insights Business</span>
+      <h2>Direction E — Analytics & Reporting</h2>
+      <p>Vue analytics du dashboard. Données de vente visuellement présentées pour que le vendeur comprenne d'un coup d'œil la santé de son business.</p>
+    </div>
+    <div class="mockup-grid">
+
+      <div class="mockup-frame">
+        <h3>📱 Analytics — Chiffres du mois</h3>
+        <div class="phone">
+          <div class="status-bar"><span>09:41</span><span>●●● 5G 🔋</span></div>
+          <div class="top-nav">
+            <div class="top-nav-title">Analytics</div>
+          </div>
+          <div class="analytics-header">
+            <div class="period-tabs">
+              <div class="period-tab">7j</div>
+              <div class="period-tab active">Ce mois</div>
+              <div class="period-tab">3 mois</div>
+            </div>
+          </div>
+          <div class="chart-area">
+            <div class="chart-title">Chiffre d'affaires</div>
+            <div class="chart-big-number">1 240 000 FCFA</div>
+            <div class="chart-sub">↑ +23% vs mars 2026</div>
+            <div class="mini-bars">
+              <div class="mini-bar" style="height:30%;"></div>
+              <div class="mini-bar" style="height:45%;"></div>
+              <div class="mini-bar" style="height:35%;"></div>
+              <div class="mini-bar" style="height:60%;"></div>
+              <div class="mini-bar" style="height:50%;"></div>
+              <div class="mini-bar" style="height:75%;"></div>
+              <div class="mini-bar" style="height:65%;"></div>
+              <div class="mini-bar active" style="height:100%;"></div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px;">
+            <div class="stat-card">
+              <div class="stat-label">Panier moyen</div>
+              <div class="stat-value" style="font-size:18px;">26 383</div>
+              <div class="stat-sub">FCFA</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Commandes</div>
+              <div class="stat-value" style="font-size:18px;">47</div>
+              <div class="stat-sub" style="color:var(--agent);font-weight:500;">🤖 32 par IA</div>
+            </div>
+          </div>
+          <div class="section-header">Top produits</div>
+          <div class="top-products">
+            <div class="product-rank">
+              <div class="rank-num">1</div>
+              <div class="rank-info">
+                <div class="rank-name">Nike Air Force 1</div>
+                <div class="rank-sales">14 ventes ce mois</div>
+              </div>
+              <div class="rank-amount">392 000 FCFA</div>
+            </div>
+            <div class="product-rank">
+              <div class="rank-num">2</div>
+              <div class="rank-info">
+                <div class="rank-name">Jordan 1 Retro</div>
+                <div class="rank-sales">9 ventes ce mois</div>
+              </div>
+              <div class="rank-amount">315 000 FCFA</div>
+            </div>
+            <div class="product-rank">
+              <div class="rank-num">3</div>
+              <div class="rank-info">
+                <div class="rank-name">Adidas Yeezy 350</div>
+                <div class="rank-sales">7 ventes ce mois</div>
+              </div>
+              <div class="rank-amount">364 000 FCFA</div>
+            </div>
+          </div>
+          <div style="height:60px;"></div>
+          <div class="bottom-nav" style="position:sticky;bottom:0;">
+            <div class="nav-item"><div class="nav-icon">🏠</div><div class="nav-label">Accueil</div></div>
+            <div class="nav-item"><div class="nav-icon">📦</div><div class="nav-label">Commandes</div></div>
+            <div class="nav-item"><div class="nav-icon">💬</div><div class="nav-label">Convs.</div></div>
+            <div class="nav-item"><div class="nav-icon">🛍</div><div class="nav-label">Catalogue</div></div>
+            <div class="nav-item active"><div class="nav-icon">⋯</div><div class="nav-label" style="color:var(--primary);">Plus</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== DIRECTION F : ONBOARDING ===== -->
+  <div class="direction" id="dir-f">
+    <div class="direction-header">
+      <span class="tag" style="background:#EEF2FF;color:#6366F1;">Onboarding</span>
+      <span class="tag" style="background:#D1FAE5;color:#065F46;">Activation</span>
+      <h2>Direction F — Wizard d'Onboarding</h2>
+      <p>Le parcours d'activation en 5 étapes. Chaque étape est claire, guidée, et la progression vers le aha moment est visible à chaque instant.</p>
+    </div>
+    <div class="mockup-grid">
+
+      <div class="mockup-frame">
+        <h3>📱 Onboarding — Étape 2/5</h3>
+        <div class="phone">
+          <div class="status-bar"><span>09:41</span><span>●●● 5G 🔋</span></div>
+          <div class="top-nav">
+            <div class="top-nav-title">Configuration</div>
+          </div>
+          <div class="onboarding-body">
+            <div class="onboarding-progress">
+              <div class="progress-label">
+                <span>Connexion WhatsApp</span>
+                <span>Étape 2 sur 5</span>
+              </div>
+              <div class="progress-bar-track">
+                <div class="progress-bar-fill" style="width:40%;"></div>
+              </div>
+            </div>
+            <div style="margin-bottom:20px;">
+              <div style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:6px;">Connectez votre WhatsApp Business</div>
+              <div style="font-size:14px;color:var(--text-secondary);line-height:1.5;">C'est l'étape la plus importante. Votre agent utilisera ce numéro pour répondre à vos clients.</div>
+            </div>
+            <div style="background:var(--primary-light);border-radius:12px;padding:14px;margin-bottom:16px;border:1px solid #C7D2FE;">
+              <div style="font-size:13px;font-weight:600;color:var(--primary);margin-bottom:4px;">📹 Guide vidéo disponible</div>
+              <div style="font-size:13px;color:var(--text-secondary);">Tutoriel Meta Business Manager · 3 min</div>
+            </div>
+            <div class="step-list">
+              <div class="step-item completed">
+                <div class="step-num completed">✓</div>
+                <div class="step-content">
+                  <div class="step-title">Inscription créée</div>
+                  <div class="step-sub">Compte Whatsell actif</div>
+                </div>
+              </div>
+              <div class="step-item active">
+                <div class="step-num active">2</div>
+                <div class="step-content">
+                  <div class="step-title">Connexion WhatsApp Business</div>
+                  <div class="step-sub">Via Meta Business Manager</div>
+                </div>
+              </div>
+              <div class="step-item">
+                <div class="step-num">3</div>
+                <div class="step-content">
+                  <div class="step-title">Ajout du catalogue</div>
+                  <div class="step-sub">Produits + variantes + photos</div>
+                </div>
+              </div>
+              <div class="step-item">
+                <div class="step-num">4</div>
+                <div class="step-content">
+                  <div class="step-title">Règles de paiement</div>
+                  <div class="step-sub">% avance, modes acceptés</div>
+                </div>
+              </div>
+              <div class="step-item">
+                <div class="step-num">5</div>
+                <div class="step-content">
+                  <div class="step-title">🚀 Activer l'agent</div>
+                  <div class="step-sub">Votre agent commence à travailler</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="cta-area">
+            <button class="btn-primary">Commencer la connexion →</button>
+            <div style="text-align:center;font-size:13px;color:var(--text-muted);">Besoin d'aide ? <span style="color:var(--primary);font-weight:500;">Support WhatsApp</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mockup-frame">
+        <h3>📱 Activation — L'agent est prêt !</h3>
+        <div class="phone">
+          <div class="status-bar"><span>09:41</span><span>●●● 5G 🔋</span></div>
+          <div style="background:var(--primary);padding:20px 16px;color:white;text-align:center;">
+            <div style="font-size:48px;margin-bottom:8px;">🚀</div>
+            <div style="font-size:22px;font-weight:700;margin-bottom:6px;">Votre agent est prêt !</div>
+            <div style="font-size:14px;opacity:0.8;">Il commence à travailler pour vous maintenant</div>
+          </div>
+          <div style="padding:20px 16px;display:flex;flex-direction:column;gap:14px;">
+            <div style="background:var(--agent-light);border-radius:12px;padding:16px;text-align:center;">
+              <div style="font-size:32px;margin-bottom:6px;">🤖</div>
+              <div style="font-size:16px;font-weight:700;color:#065F46;">Agent Actif</div>
+              <div style="font-size:13px;color:#065F46;margin-top:4px;">Essai Pro · 7 jours gratuits</div>
+            </div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;">
+              <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:10px;">VOTRE CONFIGURATION</div>
+              <div class="info-row" style="padding:6px 0;border-bottom:1px solid var(--border);"><span class="info-key">WhatsApp</span><span class="info-val" style="color:var(--agent);">✓ Connecté</span></div>
+              <div class="info-row" style="padding:6px 0;border-bottom:1px solid var(--border);"><span class="info-key">Catalogue</span><span class="info-val">12 produits</span></div>
+              <div class="info-row" style="padding:6px 0;"><span class="info-key">Avance requise</span><span class="info-val">50% Orange Money</span></div>
+            </div>
+            <button class="btn-primary" style="margin-top:4px;">Aller sur mon dashboard →</button>
+            <div style="text-align:center;font-size:13px;color:var(--text-muted);">Votre premier client peut commander dans les prochaines minutes</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+function showDirection(id) {
+  document.querySelectorAll('.direction').forEach(d => d.classList.remove('active'));
+  document.querySelectorAll('.dir-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('dir-' + id).classList.add('active');
+  event.target.classList.add('active');
+  window.scrollTo({ top: 200, behavior: 'smooth' });
+}
+</script>
+
+</body>
+</html>

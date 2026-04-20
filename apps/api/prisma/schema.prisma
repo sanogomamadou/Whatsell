@@ -1,0 +1,256 @@
+// Schéma Prisma — Whatsell
+// Multi-tenant : tenant_id obligatoire sur toutes les tables vendeur
+// Montants FCFA : Int uniquement (jamais Float/Decimal)
+// Dates : DateTime stocké en UTC automatiquement par Prisma
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── ENUMS ───────────────────────────────────────────
+
+enum Role {
+  OWNER
+  CO_MANAGER
+  SELLER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum SubscriptionTier {
+  FREE
+  PRO
+  BUSINESS
+}
+
+// ─── TENANT ──────────────────────────────────────────
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  logoUrl   String?
+  // Token WhatsApp Business — chiffré AES-256-GCM avant stockage
+  whatsappBusinessAccountId String?
+  whatsappToken             String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users         User[]
+  orders        Order[]
+  products      Product[]
+  customers     Customer[]
+  stockLevels   StockLevel[]
+  conversations Conversation[]
+  invoices      Invoice[]
+  subscriptions Subscription[]
+  pushTokens    PushToken[]
+
+  @@map("tenants")
+}
+
+// ─── USER ────────────────────────────────────────────
+
+model User {
+  id               String   @id @default(uuid())
+  tenantId         String
+  email            String   @unique
+  passwordHash     String
+  firstName        String?
+  lastName         String?
+  role             Role     @default(OWNER)
+  isActive         Boolean  @default(true)
+  refreshTokenHash String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pushTokens PushToken[]
+
+  @@index([tenantId])
+  @@map("users")
+}
+
+// ─── ORDER ───────────────────────────────────────────
+
+model Order {
+  id              String      @id @default(uuid())
+  tenantId        String
+  customerId      String?
+  status          OrderStatus @default(PENDING)
+  // Montants FCFA — Int obligatoire, jamais Float
+  totalAmount     Int
+  advanceAmount   Int
+  deliveryAddress String?
+  notes           String?
+  receiptUrl      String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  invoice  Invoice?
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("orders")
+}
+
+// ─── PRODUCT ─────────────────────────────────────────
+
+model Product {
+  id                  String   @id @default(uuid())
+  tenantId            String
+  name                String
+  description         String?
+  // Prix FCFA — Int obligatoire, jamais Float
+  basePrice           Int
+  isActive            Boolean  @default(true)
+  imageUrl            String?
+  stockAlertThreshold Int      @default(5)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stockLevels StockLevel[]
+
+  @@index([tenantId])
+  @@map("products")
+}
+
+// ─── CUSTOMER ────────────────────────────────────────
+
+model Customer {
+  id            String   @id @default(uuid())
+  tenantId      String
+  whatsappPhone String
+  displayName   String?
+  // Segmentation automatique : new, regular, vip
+  segment       String   @default("new")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@unique([tenantId, whatsappPhone])
+  @@index([tenantId])
+  @@map("customers")
+}
+
+// ─── STOCK LEVEL ─────────────────────────────────────
+
+model StockLevel {
+  id         String   @id @default(uuid())
+  tenantId   String
+  productId  String
+  // Clé de variante ex: "Taille:L,Couleur:Rouge"
+  variantKey String
+  // Contrainte >= 0 obligatoire au niveau service/repository (Prisma ne supporte pas CHECK inline)
+  quantity   Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, variantKey])
+  @@index([tenantId])
+  @@map("stock_levels")
+}
+
+// ─── CONVERSATION ────────────────────────────────────
+
+model Conversation {
+  id                String   @id @default(uuid())
+  tenantId          String
+  customerId        String?
+  whatsappPhone     String
+  // true = géré par l'agent IA, false = pris en charge par le vendeur
+  isAgentControlled Boolean  @default(true)
+  lastMessageAt     DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, whatsappPhone])
+  @@index([tenantId])
+  @@map("conversations")
+}
+
+// ─── INVOICE ─────────────────────────────────────────
+
+model Invoice {
+  id        String   @id @default(uuid())
+  tenantId  String
+  orderId   String   @unique
+  pdfUrl    String?
+  // Numéro séquentiel par tenant ex: "WS-2026-001"
+  number    String
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  order  Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, number])
+  @@index([tenantId])
+  @@map("invoices")
+}
+
+// ─── PUSH TOKEN ──────────────────────────────────────
+
+model PushToken {
+  id                String   @id @default(uuid())
+  tenantId          String
+  userId            String
+  // Hash SHA-256 de l'endpoint — utilisé pour lookup/upsert (non secret)
+  endpointHash      String
+  // Champs Web Push chiffrés AES-256-GCM avant stockage
+  endpointEncrypted String
+  p256dhEncrypted   String
+  authEncrypted     String
+  userAgent         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, endpointHash])
+  @@index([tenantId])
+  @@map("push_tokens")
+}
+
+// ─── SUBSCRIPTION ────────────────────────────────────
+
+model Subscription {
+  id                 String           @id @default(uuid())
+  tenantId           String           @unique
+  tier               SubscriptionTier @default(FREE)
+  ordersUsed         Int              @default(0)
+  ordersLimit        Int              @default(50)
+  trialEndsAt        DateTime?
+  currentPeriodStart DateTime         @default(now())
+  currentPeriodEnd   DateTime
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("subscriptions")
+}

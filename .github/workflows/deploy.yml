@@ -1,0 +1,18 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-backend:
+    name: Deploy backend → Railway
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Railway deploy
+        env:
+          RAILWAY_WEBHOOK_URL: ${{ secrets.RAILWAY_WEBHOOK_URL }}
+        run: |
+          curl -s --fail -X POST "$RAILWAY_WEBHOOK_URL"

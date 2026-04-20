@@ -1,0 +1,158 @@
+# generated: 2026-04-15T00:00:00Z
+# last_updated: 2026-04-15T12:00:00Z
+# project: Whatsell
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-04-15T00:00:00Z
+last_updated: 2026-04-20T12:00:00Z
+project: Whatsell
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+
+  # ─────────────────────────────────────────────────────────────
+  # Epic 1 : Fondation Technique & Design System
+  # ─────────────────────────────────────────────────────────────
+  epic-1: in-progress
+  1-1-initialisation-du-monorepo-turborepo: done
+  1-2-schema-prisma-et-isolation-multi-tenant: done
+  1-3-authentification-jwt-httponly-et-refresh-token: done
+  1-4-rbac-guards-decorateurs-et-roles: done
+  1-5-infrastructure-nestjs-commune: done
+  1-6-queue-bullmq-redis: done
+  1-7-sse-notifications-temps-reel: done
+  1-8-stockage-cloudflare-r2: done
+  1-9-cicd-github-actions: done
+  1-10-design-system-tokens-tailwind-et-composants-shadcn-ui: done
+  1-11-composants-custom-whatsell: done
+  1-12-web-push-notifications-pwa-service-worker: done
+  epic-1-retrospective: optional
+
+  # ─────────────────────────────────────────────────────────────
+  # Epic 2 : Inscription & Activation Vendeur
+  # ─────────────────────────────────────────────────────────────
+  epic-2: backlog
+  2-1-page-inscription-et-creation-de-compte: backlog
+  2-2-wizard-etape-1-profil-boutique: backlog
+  2-3-wizard-etape-2-connexion-whatsapp-business: backlog
+  2-4-wizard-etape-3-premier-produit-au-catalogue: backlog
+  2-5-wizard-etape-4-regles-de-paiement: backlog
+  2-6-wizard-etape-5-activation-de-lagent: backlog
+  2-7-gestion-du-profil-et-reconnexion-whatsapp: backlog
+  2-8-notifications-essai-gratuit-et-expiration: backlog
+  epic-2-retrospective: optional
+
+  # ─────────────────────────────────────────────────────────────
+  # Epic 3 : Catalogue & Gestion des Stocks
+  # ─────────────────────────────────────────────────────────────
+  epic-3: backlog
+  3-1-schema-bdd-produits-et-variantes: backlog
+  3-2-crud-produits-backend-api: backlog
+  3-3-gestion-des-variantes-libres: backlog
+  3-4-gestion-des-niveaux-de-stock: backlog
+  3-5-alertes-de-rupture-de-stock: backlog
+  3-6-interface-catalogue-frontend: backlog
+  epic-3-retrospective: optional
+
+  # ─────────────────────────────────────────────────────────────
+  # Epic 4 : Agent WhatsApp IA & Conversations
+  # ─────────────────────────────────────────────────────────────
+  epic-4: backlog
+  4-1-schema-bdd-conversations-et-commandes-base: backlog
+  4-2-reception-des-webhooks-twilio-queue: backlog
+  4-3-processor-ia-identification-dintention-et-reponse: backlog
+  4-4-flux-de-vente-guidage-variantes-et-collecte-livraison: backlog
+  4-5-flux-de-paiement-calcul-avance-et-reception-recu: backlog
+  4-6-creation-automatique-de-commande: backlog
+  4-7-detection-de-situations-complexes-et-transfert-vendeur: backlog
+  4-8-takeover-vendeur-et-retour-a-lagent: backlog
+  4-9-vue-conversations-dashboard-et-mode-supervision: backlog
+  epic-4-retrospective: optional
+
+  # ─────────────────────────────────────────────────────────────
+  # Epic 5 : Gestion des Commandes & Facturation
+  # ─────────────────────────────────────────────────────────────
+  epic-5: backlog
+  5-1-api-commandes-liste-et-detail: backlog
+  5-2-progression-des-statuts-de-commande: backlog
+  5-3-interface-liste-des-commandes: backlog
+  5-4-fiche-commande-et-confirmation: backlog
+  5-5-dashboard-accueil-header-hero-stats: backlog
+  5-6-generation-de-facture-pdf: backlog
+  epic-5-retrospective: optional
+
+  # ─────────────────────────────────────────────────────────────
+  # Epic 6 : CRM, Analytics & Reporting
+  # ─────────────────────────────────────────────────────────────
+  epic-6: backlog
+  6-1-creation-automatique-et-gestion-des-fiches-clients: backlog
+  6-2-segmentation-automatique-des-clients: backlog
+  6-3-interface-crm-frontend: backlog
+  6-4-api-analytics-metriques-business: backlog
+  6-5-interface-analytics-frontend: backlog
+  epic-6-retrospective: optional
+
+  # ─────────────────────────────────────────────────────────────
+  # Epic 7 : Agent Conseiller IA
+  # ─────────────────────────────────────────────────────────────
+  epic-7: backlog
+  7-1-schema-bdd-et-api-chat-conseiller: backlog
+  7-2-reponses-ia-sur-les-donnees-vendeur: backlog
+  7-3-alertes-proactives-automatiques: backlog
+  7-4-interface-chat-conseiller-frontend: backlog
+  epic-7-retrospective: optional
+
+  # ─────────────────────────────────────────────────────────────
+  # Epic 8 : Abonnements, Tiers & Collaborateurs
+  # ─────────────────────────────────────────────────────────────
+  epic-8: backlog
+  8-1-schema-bdd-abonnements-et-collaborateurs: backlog
+  8-2-compteur-de-commandes-et-limites-de-tier: backlog
+  8-3-upgrade-dabonnement: backlog
+  8-4-invitation-de-collaborateurs: backlog
+  8-5-gestion-des-acces-collaborateurs: backlog
+  8-6-interface-abonnement-et-collaborateurs-frontend: backlog
+  epic-8-retrospective: optional
+
+  # ─────────────────────────────────────────────────────────────
+  # Epic 9 : Panel Admin & Monitoring Plateforme
+  # ─────────────────────────────────────────────────────────────
+  epic-9: backlog
+  9-1-monitoring-des-connexions-whatsapp: backlog
+  9-2-support-vendeur-notifications-operateur: backlog
+  9-3-metriques-globales-de-la-plateforme: backlog
+  9-4-interface-panel-admin-frontend: backlog
+  epic-9-retrospective: optional
