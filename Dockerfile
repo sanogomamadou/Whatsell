@@ -13,10 +13,8 @@ RUN pnpm install --frozen-lockfile
 COPY apps/api ./apps/api
 COPY packages/shared ./packages/shared
 
-WORKDIR /app/apps/api
-RUN npx prisma generate
+ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
 
-WORKDIR /app
 RUN pnpm --filter @whatsell/api build
 
 EXPOSE 3001
