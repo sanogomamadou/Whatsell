@@ -22,6 +22,7 @@ COPY packages/shared/src ./packages/shared/src
 COPY packages/shared/tsconfig.json ./packages/shared/
 
 WORKDIR /app/apps/api
+RUN pnpm exec prisma generate
 RUN pnpm build
 RUN ls -la dist/ || echo "ERROR: dist/ does not exist"
 RUN ls -la dist/main.js || echo "ERROR: dist/main.js does not exist"
