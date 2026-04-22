@@ -23,7 +23,7 @@ COPY packages/shared/tsconfig.json ./packages/shared/
 
 WORKDIR /app/apps/api
 RUN pnpm exec prisma generate
-RUN pnpm build --verbose
+RUN npx nest build --debug
 RUN ls -la dist/
 RUN if [ ! -f dist/main.js ]; then \
       echo "ERROR: dist/main.js was not produced. Full dist/ tree:"; \
