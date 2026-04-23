@@ -25,8 +25,8 @@ WORKDIR /app/apps/api
 RUN pnpm exec prisma generate
 RUN npx nest build
 RUN ls -la dist/
-RUN if [ ! -f dist/main.js ]; then \
-      echo "ERROR: dist/main.js was not produced. Full dist/ tree:"; \
+RUN if [ ! -f dist/src/main.js ]; then \
+      echo "ERROR: dist/src/main.js was not produced. Full dist/ tree:"; \
       find dist/ -type f | sort; \
       exit 1; \
     fi
@@ -35,4 +35,4 @@ WORKDIR /app
 
 EXPOSE 3001
 
-CMD ["node", "apps/api/dist/main.js"]
+CMD ["node", "apps/api/dist/src/main.js"]
