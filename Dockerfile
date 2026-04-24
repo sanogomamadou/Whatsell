@@ -11,7 +11,7 @@ COPY packages/shared/package.json ./packages/shared/
 COPY apps/api/prisma ./apps/api/prisma
 
 ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
-ENV CACHE_BUST=3
+ENV CACHE_BUST=4
 
 RUN pnpm install --frozen-lockfile
 
