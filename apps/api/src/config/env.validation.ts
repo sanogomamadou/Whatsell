@@ -16,7 +16,19 @@ const envSchema = z.object({
     .min(1, 'DATABASE_URL est requis')
     .startsWith('postgresql', 'DATABASE_URL doit commencer par postgresql'),
 
-  REDIS_URL: z.string().url('REDIS_URL doit être une URL valide'),
+  DIRECT_DATABASE_URL: z
+    .string()
+    .min(1, 'DIRECT_DATABASE_URL est requis')
+    .startsWith('postgresql', 'DIRECT_DATABASE_URL doit commencer par postgresql'),
+
+  // redis:// (local) ou rediss:// (Upstash TLS) — .url() de Zod ne supporte pas rediss://
+  REDIS_URL: z
+    .string()
+    .min(1, 'REDIS_URL est requis')
+    .refine(
+      (val) => val.startsWith('redis://') || val.startsWith('rediss://'),
+      'REDIS_URL doit commencer par redis:// ou rediss://',
+    ),
 
   JWT_SECRET: z
     .string()

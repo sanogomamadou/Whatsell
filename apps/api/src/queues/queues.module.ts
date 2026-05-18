@@ -12,20 +12,25 @@ import { WhatsappHealthCheckProcessor } from './processors/whatsapp-health-check
   imports: [
     BullModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        connection: {
-          url: configService.getOrThrow<string>('redis.url'),
-        },
-        defaultJobOptions: {
-          attempts: 3,
-          backoff: {
-            type: 'exponential',
-            delay: 1000, // 1s → 2s → 4s
+      useFactory: (configService: ConfigService) => {
+        const redisUrl = configService.getOrThrow<string>('redis.url');
+        const isTls = redisUrl.startsWith('rediss://');
+        return {
+          connection: {
+            url: redisUrl,
+            ...(isTls && { tls: {} }),
           },
-          removeOnComplete: { count: 100 },
-          removeOnFail: { count: 50 },
-        },
-      }),
+          defaultJobOptions: {
+            attempts: 3,
+            backoff: {
+              type: 'exponential',
+              delay: 1000, // 1s → 2s → 4s
+            },
+            removeOnComplete: { count: 100 },
+            removeOnFail: { count: 50 },
+          },
+        };
+      },
     }),
     BullModule.registerQueue(
       { name: 'whatsapp-messages' },

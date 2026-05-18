@@ -39,7 +39,7 @@ _Ce document se construit collaborativement à travers un processus de découver
 
 - **Performance** : ≤3s chargement dashboard sur 3G (NFR2), ≤3 min réponse agent IA (NFR1), ≤30s notification temps réel (NFR3), ≤5s génération PDF (NFR4)
 - **Sécurité** : TLS 1.2+ en transit (NFR5), chiffrement au repos données sensibles (NFR6), JWT 15min/7j (NFR7), isolation multi-tenant stricte (NFR8), audit log actions sensibles (NFR9), accès privé photos reçus (NFR10)
-- **Fiabilité** : 99% uptime agent sur plage 06h–23h heure locale (NFR11), fallback message d'attente sur indisponibilité IA (NFR12), backup quotidien 30j rétention (NFR13), détection déconnexion token WhatsApp en ≤5 min (NFR14)
+- **Fiabilité** : 99% uptime agent sur plage 06h–23h heure locale (NFR11), fallback message d'attente sur indisponibilité IA (NFR12), backup quotidien 30j rétention (NFR13 — inclus Neon), détection déconnexion token WhatsApp en ≤5 min (NFR14)
 - **Scalabilité** : 50→500 vendeurs sans dégradation (NFR15), queue async pour 1 000 messages simultanés (NFR16), architecture extensible nouveaux marchés/langues (NFR17)
 - **Intégration** : fallback LLM sur timeout 3 min (NFR18), queue WhatsApp sur indisponibilité Twilio (NFR19), journalisation complète erreurs intégration (NFR20)
 
@@ -94,9 +94,10 @@ Full-stack SaaS — application web mobile-first + API backend avec traitement a
 - TypeScript strict sur toute la stack — cohérence et sécurité des types de bout en bout
 - Types partagés via `packages/shared` — 0 désynchronisation entre frontend et backend
 - Next.js 16 sur Vercel — déploiement frontend optimisé, App Router, Turbopack
-- NestJS 11 sur Railway — processus persistants requis pour queue BullMQ, cron alertes, webhooks WhatsApp
+- NestJS 11 sur Render — processus persistants requis pour queue BullMQ, cron alertes, webhooks WhatsApp
 - Vercel supporte nativement les monorepos Turborepo — CI/CD frontend automatique
-- Railway provisionne PostgreSQL + Redis en 1 clic — stack complète sans ops complexe
+- Neon (PostgreSQL serverless) — free tier généreux, backups inclus, compatible Prisma
+- Upstash (Redis serverless) — compatible BullMQ, free tier, pas de serveur à gérer
 
 ### Commandes d'Initialisation
 
@@ -134,10 +135,10 @@ whatsell/
 | Auth | Passport.js + JWT (intégré NestJS) |
 | Monorepo | Turborepo (build cache, scripts partagés) |
 | Déploiement frontend | Vercel |
-| Déploiement backend | Railway |
-| Base de données | PostgreSQL sur Railway |
-| Cache / Queue broker | Redis sur Railway |
-| Docker | Non requis en V1 (Railway gère la conteneurisation) |
+| Déploiement backend | Render (Web Service + Background Worker) |
+| Base de données | Neon (PostgreSQL serverless) |
+| Cache / Queue broker | Upstash (Redis serverless) |
+| Docker | Non requis en V1 (Render gère la conteneurisation) |
 
 **Note :** L'initialisation du projet à partir de ces commandes constitue la première story d'implémentation.
 
@@ -192,7 +193,7 @@ whatsell/
 - Accès : URLs signées temporaires (presigned URLs) — jamais d'accès public direct aux reçus
 - Rationale : 0 frais de sortie réseau, free tier généreux (10 GB), isolation par préfixe tenant
 
-**Stratégie de Cache — Redis (instance partagée BullMQ)**
+**Stratégie de Cache — Upstash Redis (instance partagée BullMQ)**
 
 - Outil : `cache-manager` NestJS + adaptateur Redis
 - Cas d'usage : résultats analytics coûteux (TTL 5 min), catalogue produits (TTL 1 min), sessions utilisateur
@@ -320,11 +321,11 @@ Push main → GitHub Actions :
   ├── Lint + TypeScript check (toute la stack)
   ├── Tests unitaires (NestJS + Next.js)
   ├── Build Next.js → Vercel deploy (auto via intégration)
-  └── Build NestJS → Railway deploy (via webhook)
+  └── Build NestJS → Render deploy (via deploy hook URL)
 ```
 
 - Environnements : `development` (local), `preview` (PR Vercel), `production`
-- Variables d'environnement : Railway secrets pour le backend, Vercel env vars pour le frontend
+- Variables d'environnement : Render env vars pour le backend, Vercel env vars pour le frontend
 
 **Monitoring & Erreurs — Sentry**
 
@@ -1007,8 +1008,8 @@ Tous les modules sont mappés à des exigences fonctionnelles spécifiques. Aucu
 | Catégorie | NFRs | Couverture architecturale |
 |-----------|------|--------------------------|
 | Performance (NFR1–4) | ✅ | LlmService timeout 3min, Next.js lazy loading, SSE ≤30s, react-pdf serveur |
-| Sécurité (NFR5–10) | ✅ | TLS Railway/Vercel natif, AES-256-GCM, JWT httpOnly cookies, isolation tenant AsyncLocalStorage, R2 presigned URLs, AuditLogInterceptor |
-| Fiabilité (NFR11–14) | ✅ | Railway always-on, fallback message d'attente LLM, backups Railway PostgreSQL, BullMQ cron health-check WhatsApp |
+| Sécurité (NFR5–10) | ✅ | TLS Render/Vercel natif, AES-256-GCM, JWT httpOnly cookies, isolation tenant AsyncLocalStorage, R2 presigned URLs, AuditLogInterceptor |
+| Fiabilité (NFR11–14) | ✅ | Render always-on (plan payant), fallback message d'attente LLM, backups Neon PostgreSQL, BullMQ cron health-check WhatsApp |
 | Scalabilité (NFR15–17) | ✅ | BullMQ queue 1000 msg, PostgreSQL indexes sur tenant_id, modules isolés extensibles |
 | Intégration (NFR18–20) | ✅ | Fallback LLM → transfert vendeur, BullMQ queue Twilio, Pino + Sentry journalisation |
 
@@ -1036,7 +1037,7 @@ fetch(url, {
 ```
 
 Variables d'environnement requises :
-- `FRONTEND_URL` dans Railway : `https://app.whatsell.com` (prod), `http://localhost:3000` (dev)
+- `FRONTEND_URL` dans Render : `https://app.whatsell.com` (prod), `http://localhost:3000` (dev)
 - `NEXT_PUBLIC_API_URL` dans Vercel : `https://api.whatsell.com` (prod), `http://localhost:3001` (dev)
 
 **Gap 2 (Important) — Audit Log (NFR9)**
@@ -1049,7 +1050,39 @@ Implémentation via décorateur + intercepteur NestJS :
   - Modification règles de paiement, export données, gestion collaborateurs, changement abonnement
 - Localisation : `common/interceptors/audit-log.interceptor.ts` + `modules/audit/audit.repository.ts`
 
-**Gap 3 (Important) — Surveillance token WhatsApp (NFR14 : détection ≤5 min)**
+**Gap 3 (Important) — Configuration Neon + Prisma (connection pooling)**
+
+Neon étant serverless, les connexions directes saturent rapidement avec NestJS. Il faut utiliser l'URL pooler de Neon pour les requêtes, et l'URL directe uniquement pour les migrations Prisma.
+
+```prisma
+// apps/api/prisma/schema.prisma
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")      // URL pooler Neon → requêtes runtime
+  directUrl = env("DIRECT_DATABASE_URL") // URL directe Neon → migrations Prisma uniquement
+}
+```
+
+Variables d'environnement Render :
+- `DATABASE_URL` : URL pooler Neon (format `postgres://...@ep-xxx-pooler.neon.tech/whatsell?sslmode=require`)
+- `DIRECT_DATABASE_URL` : URL directe Neon (format `postgres://...@ep-xxx.neon.tech/whatsell?sslmode=require`)
+
+Configuration Redis Upstash (BullMQ) :
+```typescript
+// apps/api/src/config/redis.config.ts
+redis: {
+  host: process.env.UPSTASH_REDIS_HOST,
+  port: 6379,
+  password: process.env.UPSTASH_REDIS_PASSWORD,
+  tls: {} // Upstash impose TLS obligatoire
+}
+```
+
+Variables d'environnement Render :
+- `UPSTASH_REDIS_HOST` : `xxx.upstash.io`
+- `UPSTASH_REDIS_PASSWORD` : mot de passe Upstash
+
+**Gap 5 (Important) — Surveillance token WhatsApp (NFR14 : détection ≤5 min)**
 
 BullMQ cron dédié `whatsapp-health-check` :
 
