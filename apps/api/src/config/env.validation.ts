@@ -41,7 +41,10 @@ const envSchema = z.object({
     .string()
     .length(32, "ENCRYPTION_KEY doit être exactement 32 caractères (AES-256)"),
 
-  SENTRY_DSN: z.string().url('SENTRY_DSN doit être une URL valide').optional(),
+  SENTRY_DSN: z.preprocess(
+    (val) => (val === '' ? undefined : val),
+    z.string().url('SENTRY_DSN doit être une URL valide').optional(),
+  ),
 
   R2_ACCOUNT_ID: z.string().optional().default(''),
   R2_ACCESS_KEY_ID: z.string().optional().default(''),
