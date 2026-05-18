@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   DeleteObjectCommand,
@@ -19,7 +19,8 @@ const MAX_EXPIRES_IN = 604800;
 
 @Injectable()
 export class StorageService {
-  private readonly client: S3Client;
+  private readonly logger = new Logger(StorageService.name);
+  private readonly client: S3Client | null;
   private readonly buckets: Record<StorageType, string>;
 
   constructor(
@@ -31,17 +32,15 @@ export class StorageService {
     const secretAccessKey = this.configService.get<string>('r2.secretAccessKey') ?? '';
 
     if (!accountId || !accessKeyId || !secretAccessKey) {
-      throw new Error(
-        'StorageService : configuration R2 incomplète. ' +
-          'Définissez R2_ACCOUNT_ID, R2_ACCESS_KEY_ID et R2_SECRET_ACCESS_KEY.',
-      );
+      this.logger.warn('R2 non configuré — StorageService désactivé jusqu\'à la configuration de R2_ACCOUNT_ID, R2_ACCESS_KEY_ID et R2_SECRET_ACCESS_KEY');
+      this.client = null;
+    } else {
+      this.client = new S3Client({
+        region: 'auto',
+        endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+        credentials: { accessKeyId, secretAccessKey },
+      });
     }
-
-    this.client = new S3Client({
-      region: 'auto',
-      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-      credentials: { accessKeyId, secretAccessKey },
-    });
 
     this.buckets = {
       receipts: this.configService.get<string>('r2.bucketReceipts') ?? 'whatsell-receipts',
@@ -50,12 +49,19 @@ export class StorageService {
     };
   }
 
+  private assertClientReady(): void {
+    if (!this.client) {
+      throw new Error('StorageService : R2 non configuré. Définissez R2_ACCOUNT_ID, R2_ACCESS_KEY_ID et R2_SECRET_ACCESS_KEY.');
+    }
+  }
+
   async upload(
     tenantId: string,
     type: StorageType,
     file: Buffer,
     mimeType: string,
   ): Promise<string> {
+    this.assertClientReady();
     if (!tenantId) {
       throw new BadRequestException('tenantId requis pour le stockage R2');
     }
@@ -63,7 +69,7 @@ export class StorageService {
     const uuid = randomUUID();
     const key = `${tenantId}/${type}/${uuid}`;
 
-    await this.client.send(
+    await this.client!.send(
       new PutObjectCommand({
         Bucket: this.buckets[type],
         Key: key,
@@ -76,6 +82,7 @@ export class StorageService {
   }
 
   async getSignedUrl(key: string, expiresIn = 3600): Promise<string> {
+    this.assertClientReady();
     if (expiresIn <= 0 || expiresIn > MAX_EXPIRES_IN) {
       throw new BadRequestException(
         `expiresIn doit être entre 1 et ${MAX_EXPIRES_IN} secondes`,
@@ -90,14 +97,15 @@ export class StorageService {
       Key: key,
     });
 
-    return getSignedUrl(this.client, command, { expiresIn });
+    return getSignedUrl(this.client!, command, { expiresIn });
   }
 
   async delete(key: string): Promise<void> {
+    this.assertClientReady();
     const type = this.parseType(key);
     this.assertTenantAccess(key);
 
-    await this.client.send(
+    await this.client!.send(
       new DeleteObjectCommand({
         Bucket: this.buckets[type],
         Key: key,
