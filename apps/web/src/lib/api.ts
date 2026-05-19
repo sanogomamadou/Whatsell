@@ -80,6 +80,32 @@ export async function apiPatch<T>(endpoint: string, body: unknown): Promise<T> {
   return parseJsonSafe<T>(response, `PATCH ${endpoint}`);
 }
 
+export async function apiFormData<T>(
+  method: string,
+  endpoint: string,
+  formData: FormData,
+): Promise<T> {
+  // Pas de Content-Type — le browser set automatiquement multipart/form-data + boundary
+  let response: Response;
+  try {
+    response = await fetch(`${getBaseUrl()}${endpoint}`, {
+      method,
+      credentials: 'include',
+      body: formData,
+    });
+  } catch (networkError: unknown) {
+    throw new Error(
+      `Erreur réseau lors de ${method} ${endpoint} : ${
+        networkError instanceof Error ? networkError.message : String(networkError)
+      }`,
+    );
+  }
+  if (!response.ok) {
+    throw new Error(`${method} ${endpoint} échoué : ${response.status}`);
+  }
+  return parseJsonSafe<T>(response, `${method} ${endpoint}`);
+}
+
 export async function apiDelete(endpoint: string): Promise<void> {
   const response = await apiClient(endpoint, { method: 'DELETE' });
   if (!response.ok) {

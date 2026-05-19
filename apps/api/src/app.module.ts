@@ -2,7 +2,6 @@ import {
   MiddlewareConsumer,
   Module,
   NestModule,
-  RequestMethod,
 } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
@@ -20,9 +19,13 @@ import { AllExceptionsFilter } from './common/filters';
 import { ResponseWrapperInterceptor } from './common/interceptors';
 import { JwtAuthGuard, RolesGuard } from './common/guards';
 import { AuthModule } from './modules/auth/auth.module';
+import { OnboardingModule } from './modules/onboarding/onboarding.module';
+import { OnboardingController } from './modules/onboarding/onboarding.controller';
 import { QueuesModule } from './queues/queues.module';
 import { EventsModule } from './modules/events/events.module';
+import { EventsController } from './modules/events/events.controller';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { NotificationsController } from './modules/notifications/notifications.controller';
 
 @Module({
   imports: [
@@ -73,6 +76,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 
     // Modules domaines
     AuthModule,
+    OnboardingModule,
     QueuesModule,
     EventsModule,
     NotificationsModule,
@@ -96,16 +100,10 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
+    // Appliqué uniquement aux contrôleurs qui utilisent @CurrentTenant().
+    // AuthController et AppController (health) sont naturellement exclus.
     consumer
       .apply(TenantMiddleware)
-      .exclude(
-        // Routes auth exclues — pas de token lors de la connexion/inscription
-        { path: 'api/v1/auth/login', method: RequestMethod.POST },
-        { path: 'api/v1/auth/register', method: RequestMethod.POST },
-        { path: 'api/v1/auth/refresh', method: RequestMethod.POST },
-        // Health check public
-        { path: 'api/v1/health', method: RequestMethod.GET },
-      )
-      .forRoutes({ path: 'api/v1/*path', method: RequestMethod.ALL });
+      .forRoutes(OnboardingController, EventsController, NotificationsController);
   }
 }

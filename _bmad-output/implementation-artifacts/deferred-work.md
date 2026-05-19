@@ -115,3 +115,29 @@
 - D-E: `apple-touch-icon` absent du `layout.tsx` — iOS home screen sans icône app, à ajouter en Story 2.1 (onboarding)
 - D-F: Orientation `portrait-primary` dans manifest — bloque le landscape tablette, à revisiter en Story 5+ (dashboard analytics)
 - D-G: SW supprime la notification si app ouverte même si SSE déconnecté — à adresser avec heartbeat SSE dans une story dédiée
+
+## Deferred from: code review of 2-1-page-inscription-et-creation-de-compte (2026-05-18)
+
+- D-01: Concurrent registration race — same-email concurrent requests pass the `findUserByEmail` check before either commits, the second transaction fails with raw Prisma P2002 (not 409). Fix: unique constraint already on DB, but the service should catch P2002 and convert to ConflictException. Pre-existing in auth.service.ts.
+- D-02: `err.message.includes('409'/'401')` fragile — status code detection via substring match on Error.message depends on `apiPost`/`apiGet` error format string. Requires refactoring api.ts to expose a typed `ApiError { status: number }` class. Pre-existing design in api.ts.
+- D-03: Cookie `secure: true` hardcoded — silently drops auth cookies in local HTTP dev environments. Should be `secure: process.env.NODE_ENV === 'production'`. Pre-existing from Story 1.3.
+- D-04: `isActive` not checked in `findUserById` — `me()` guards on `!user.isActive` but other auth flows using `findUserById` do not. Pre-existing inconsistency.
+- D-05: No explicit CSRF token on login/register forms — mitigated by `sameSite: strict` cookies but not fully hardened. Pre-existing design.
+- D-06: Tenant slug collision on empty email local part — e.g. `123@example.com` produces slug `123-{suffix}`, which is a leading-hyphen slug if localPart is empty. Pre-existing from Story 1.3.
+- D-07: PostgreSQL `@unique` on `User.email` is case-sensitive — Zod lowercases input but the DB column lacks `citext` or a `lower(email)` index. Allows mixed-case duplicate accounts via non-Zod paths. Pre-existing data model.
+- D-08: `ordersLimit @default(50)` in Prisma schema is wrong for any tier (FREE=20, PRO=100, BUSINESS=unlimited). Future code paths that omit `ordersLimit` on subscription create will silently use 50. Pre-existing schema default.
+- D-09: No integration test for subscription atomicity rollback — unit mocks don't cover the case where `tx.subscription.create` fails inside the `$transaction`. The atomicity is guaranteed by Prisma but untested. Would require a real DB integration test.
+- D-10: `GET /auth/me` missing `@Throttle` decorator — only auth endpoint without rate limiting; all others have `{ limit: 10, ttl: 60000 }`. Now that `me()` performs a DB join, this is a low-cost DoS vector for the DB connection pool.
+
+## Fix appliqué lors du test manuel de 2-2 (2026-05-19)
+
+- BUG: `TenantMiddleware` `forRoutes({ path: 'api/v1/*path' })` ne matchait pas les routes avec `setGlobalPrefix('/api/v1')` en NestJS 11. Aucune route utilisant `@CurrentTenant()` ne fonctionnait. Fix : changé en `forRoutes({ path: '*path' })`. Bug présent depuis Story 1.3, non détecté car auth/me et routes auth n'utilisent pas `@CurrentTenant()`.
+
+## Deferred from: code review of 2-2-wizard-etape-1-profil-boutique (2026-05-19)
+
+- D-01: Upload R2 avant écriture DB → objet orphelin si l'écriture DB échoue après un upload réussi. Pattern compensation (delete-on-failure) requis. Pre-existing architectural pattern.
+- D-02: Ancien logo non supprimé de R2 lors d'un re-upload. Chaque mise à jour de logo laisse l'ancien objet R2 orphelin. Hors scope des AC de la story 2.2.
+- D-03: `UnsupportedMediaTypeException` dans le callback fileFilter Multer — la propagation en réponse 415 est version-dépendante (@nestjs/platform-express). À vérifier avec un test d'intégration.
+- D-04: Détection d'erreur frontend via `message.includes('413'/'415'/'400')` fragile — pattern établi en Story 2.1, refactor global de `api.ts` requis pour un typage propre des erreurs HTTP.
+- D-05: `apiFormData` ne lit pas le corps de la réponse d'erreur — cohérent avec les autres fonctions de `api.ts` mais perd les messages d'erreur serveur détaillés.
+- D-06: `StorageService` lève `Error` plain (pas `HttpException`) quand R2 non configuré → Sentry flood en dev. Pre-existing depuis Story 1.8.
