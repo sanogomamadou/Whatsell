@@ -46,6 +46,7 @@ model Tenant {
   // Token WhatsApp Business — chiffré AES-256-GCM avant stockage
   whatsappBusinessAccountId String?
   whatsappToken             String?
+  onboardingCompletedAt     DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

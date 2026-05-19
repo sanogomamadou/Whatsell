@@ -25,9 +25,22 @@ const mockUser = {
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
+const mockTenant = {
+  id: 'tenant-uuid-1',
+  name: 'Boutique test',
+  slug: 'boutique-test',
+  logoUrl: null,
+  whatsappBusinessAccountId: null,
+  whatsappToken: null,
+  onboardingCompletedAt: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
+
 const mockAuthRepository = {
   findUserByEmail: jest.fn(),
   findUserById: jest.fn(),
+  findUserWithTenant: jest.fn(),
   createTenantAndUser: jest.fn(),
   updateRefreshTokenHash: jest.fn(),
 };
@@ -230,6 +243,61 @@ describe('AuthService', () => {
         mockUser.id,
         null,
       );
+    });
+  });
+
+  // ─── me() ──────────────────────────────────────────────────────────────────
+
+  describe('me()', () => {
+    it('should return onboardingCompleted: false when onboardingCompletedAt is null', async () => {
+      mockAuthRepository.findUserWithTenant.mockResolvedValue({
+        ...mockUser,
+        tenant: { ...mockTenant, onboardingCompletedAt: null },
+      });
+
+      const result = await service.me(mockUser.id);
+
+      expect(result.id).toBe(mockUser.id);
+      expect(result.email).toBe(mockUser.email);
+      expect(result.role).toBe(mockUser.role);
+      expect(result.tenantId).toBe(mockUser.tenantId);
+      expect(result.onboardingCompleted).toBe(false);
+    });
+
+    it('should return onboardingCompleted: true when onboardingCompletedAt is set', async () => {
+      mockAuthRepository.findUserWithTenant.mockResolvedValue({
+        ...mockUser,
+        tenant: { ...mockTenant, onboardingCompletedAt: new Date() },
+      });
+
+      const result = await service.me(mockUser.id);
+
+      expect(result.onboardingCompleted).toBe(true);
+    });
+
+    it('should throw UnauthorizedException when user is not found', async () => {
+      mockAuthRepository.findUserWithTenant.mockResolvedValue(null);
+
+      await expect(service.me('unknown-id')).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should throw UnauthorizedException when user is inactive', async () => {
+      mockAuthRepository.findUserWithTenant.mockResolvedValue({
+        ...mockUser,
+        isActive: false,
+        tenant: mockTenant,
+      });
+
+      await expect(service.me(mockUser.id)).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should throw UnauthorizedException when tenant is null (orphaned user)', async () => {
+      mockAuthRepository.findUserWithTenant.mockResolvedValue({
+        ...mockUser,
+        tenant: null,
+      });
+
+      await expect(service.me(mockUser.id)).rejects.toThrow(UnauthorizedException);
     });
   });
 });

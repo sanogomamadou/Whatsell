@@ -1,17 +1,8 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import dynamic from 'next/dynamic';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-
-// Chargement lazy côté client uniquement — nécessite Notification API (browser)
-const NotificationPermissionPrompt = dynamic(
-  () =>
-    import('@/components/shared/NotificationPermissionPrompt').then(
-      (m) => ({ default: m.NotificationPermissionPrompt }),
-    ),
-  { ssr: false },
-);
+import { NotificationLoader } from '@/components/shared/NotificationLoader';
 
 // next/font avec police locale — jamais d'import Google Fonts externe (règle projet)
 const inter = Inter({
@@ -36,7 +27,7 @@ export default function RootLayout({
       <body className="bg-background text-text-primary antialiased">
         {children}
         <Toaster />
-        <NotificationPermissionPrompt />
+        <NotificationLoader />
       </body>
     </html>
   );

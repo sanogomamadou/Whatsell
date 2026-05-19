@@ -95,8 +95,8 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  me(@CurrentUser() user: AuthUser): AuthUser {
-    return user;
+  me(@CurrentUser() user: AuthUser) {
+    return this.authService.me(user.id);
   }
 
   private setCookies(

@@ -118,6 +118,29 @@ export class AuthService {
     await this.authRepository.updateRefreshTokenHash(userId, null);
   }
 
+  async me(userId: string): Promise<{
+    id: string;
+    email: string;
+    role: string;
+    tenantId: string;
+    onboardingCompleted: boolean;
+  }> {
+    const user = await this.authRepository.findUserWithTenant(userId);
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('Utilisateur introuvable ou inactif');
+    }
+    if (!user.tenant) {
+      throw new UnauthorizedException('Tenant introuvable');
+    }
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      tenantId: user.tenantId,
+      onboardingCompleted: !!user.tenant.onboardingCompletedAt,
+    };
+  }
+
   private async generateTokens(user: User): Promise<AuthTokens> {
     const secret = this.configService.getOrThrow<string>('jwt.secret');
 
