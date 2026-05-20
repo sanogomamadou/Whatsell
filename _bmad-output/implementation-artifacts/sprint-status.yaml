@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-15T00:00:00Z
-last_updated: 2026-05-19T16:00:00Z
+last_updated: 2026-05-20T22:30:00Z
 project: Whatsell
 project_key: NOKEY
 tracking_system: file-system
@@ -67,8 +67,8 @@ development_status:
   epic-2: in-progress
   2-1-page-inscription-et-creation-de-compte: done
   2-2-wizard-etape-1-profil-boutique: done
-  2-3-wizard-etape-2-connexion-whatsapp-business: backlog
-  2-4-wizard-etape-3-premier-produit-au-catalogue: backlog
+  2-3-wizard-etape-2-connexion-whatsapp-business: done
+  2-4-wizard-etape-3-premier-produit-au-catalogue: done
   2-5-wizard-etape-4-regles-de-paiement: backlog
   2-6-wizard-etape-5-activation-de-lagent: backlog
   2-7-gestion-du-profil-et-reconnexion-whatsapp: backlog

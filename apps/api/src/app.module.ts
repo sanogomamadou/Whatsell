@@ -21,6 +21,8 @@ import { JwtAuthGuard, RolesGuard } from './common/guards';
 import { AuthModule } from './modules/auth/auth.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { OnboardingController } from './modules/onboarding/onboarding.controller';
+import { ProductsModule } from './modules/products/products.module';
+import { ProductsController } from './modules/products/products.controller';
 import { QueuesModule } from './queues/queues.module';
 import { EventsModule } from './modules/events/events.module';
 import { EventsController } from './modules/events/events.controller';
@@ -77,6 +79,7 @@ import { NotificationsController } from './modules/notifications/notifications.c
     // Modules domaines
     AuthModule,
     OnboardingModule,
+    ProductsModule,
     QueuesModule,
     EventsModule,
     NotificationsModule,
@@ -104,6 +107,6 @@ export class AppModule implements NestModule {
     // AuthController et AppController (health) sont naturellement exclus.
     consumer
       .apply(TenantMiddleware)
-      .forRoutes(OnboardingController, EventsController, NotificationsController);
+      .forRoutes(OnboardingController, EventsController, NotificationsController, ProductsController);
   }
 }

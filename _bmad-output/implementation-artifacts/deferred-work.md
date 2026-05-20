@@ -133,6 +133,16 @@
 
 - BUG: `TenantMiddleware` `forRoutes({ path: 'api/v1/*path' })` ne matchait pas les routes avec `setGlobalPrefix('/api/v1')` en NestJS 11. Aucune route utilisant `@CurrentTenant()` ne fonctionnait. Fix : changé en `forRoutes({ path: '*path' })`. Bug présent depuis Story 1.3, non détecté car auth/me et routes auth n'utilisent pas `@CurrentTenant()`.
 
+## Deferred from: code review of 2-3-wizard-etape-2-connexion-whatsapp-business (2026-05-20)
+
+- D-01: Rotation/révocation du token WhatsApp — aucun TTL, `whatsappTokenEncryptedAt` absent. Si la clé de chiffrement est compromise, re-chiffrement impossible sans action utilisateur. À adresser en Story 2.7 (gestion reconnexion WhatsApp).
+- D-02: WABA ID non-unique entre tenants — pas de contrainte `@unique` sur `Tenant.whatsappBusinessAccountId` en DB. Collision silencieuse si deux tenants enregistrent le même WABA ID. À traiter lors du développement du webhook handler Story 4.2.
+- D-03: Pattern `message.includes('400')` fragile pour détecter les codes HTTP — pattern établi en Story 2.1/2.2, nécessite un refactor global de `api.ts` pour exposer une classe `ApiError { status: number }`. Pre-existing.
+- D-04: Absence de protection CSRF explicite sur POST /whatsapp-connect — mitigé par `SameSite=Strict` sur les cookies JWT (Story 1.3). Concern global pre-existing.
+- D-05: `OnboardingStep` hardcode `total={5}` sans source-of-truth partagée — pattern utilisé dans toutes les étapes, refactor transversal à prévoir si le nombre d'étapes change.
+- D-06: `<iframe>` YouTube sans attribut `sandbox` — CSP concern valide, YouTube requiert scripting pour fonctionner. Non bloquant MVP. À revoir si une politique CSP stricte est adoptée.
+- D-07: `ENCRYPTION_KEY` validée en nombre de chars JS (not bytes) dans `env.validation.ts` alors que `encryption.service.ts` valide en bytes — caractères multi-octets UTF-8 passeraient la validation mais échoueraient à l'exécution. Infrastructure pre-existante hors scope.
+
 ## Deferred from: code review of 2-2-wizard-etape-1-profil-boutique (2026-05-19)
 
 - D-01: Upload R2 avant écriture DB → objet orphelin si l'écriture DB échoue après un upload réussi. Pattern compensation (delete-on-failure) requis. Pre-existing architectural pattern.
@@ -141,3 +151,12 @@
 - D-04: Détection d'erreur frontend via `message.includes('413'/'415'/'400')` fragile — pattern établi en Story 2.1, refactor global de `api.ts` requis pour un typage propre des erreurs HTTP.
 - D-05: `apiFormData` ne lit pas le corps de la réponse d'erreur — cohérent avec les autres fonctions de `api.ts` mais perd les messages d'erreur serveur détaillés.
 - D-06: `StorageService` lève `Error` plain (pas `HttpException`) quand R2 non configuré → Sentry flood en dev. Pre-existing depuis Story 1.8.
+
+## Deferred from: code review of 2-4-wizard-etape-3-premier-produit-au-catalogue (2026-05-20)
+
+- D-01: Orphelin R2 si transaction DB échoue après upload réussi — même pattern que D-01 story 2-2, accepté pour l'onboarding (compensation delete-on-failure requis post-MVP)
+- D-02: Détection d'erreur HTTP frontend fragile via `message.includes('4xx')` — refactor global de `api.ts` requis pour une classe `ApiError { status: number }` typée. Pre-existing depuis stories 2-1/2-2/2-3
+- D-03: `imageUrl` stocke une clé R2 (`tenantId/products/uuid`) pas une URL HTTP — images non affichables si R2 public access non configuré. Pre-existing depuis story 1-8 (DEF-07)
+- D-04: Upload R2 silencieux en production — catch avale toutes erreurs sans logging ni distinction dev/prod. Pre-existing depuis story 2-2 (D-06)
+- D-05: MIME spoofing — validation MIME côté serveur basée sur l'en-tête `Content-Type` client, pas sur les magic bytes. Nécessite le package `file-type`. Hardening sécurité post-MVP
+- D-06: Race condition count/findMany en pagination — `Promise.all` non atomique, incohérence `total`/`items.length` possible sous écriture concurrente. Faible risque pour un catalogue d'onboarding

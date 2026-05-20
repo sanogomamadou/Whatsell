@@ -10,9 +10,9 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
 import { TenantContextService } from './tenant-context.service';
 
-export type StorageType = 'receipts' | 'logos' | 'invoices';
+export type StorageType = 'receipts' | 'logos' | 'invoices' | 'products';
 
-const STORAGE_TYPES: readonly StorageType[] = ['receipts', 'logos', 'invoices'];
+const STORAGE_TYPES: readonly StorageType[] = ['receipts', 'logos', 'invoices', 'products'];
 
 // Limite AWS S3 Presigned URL : 7 jours
 const MAX_EXPIRES_IN = 604800;
@@ -46,6 +46,7 @@ export class StorageService {
       receipts: this.configService.get<string>('r2.bucketReceipts') ?? 'whatsell-receipts',
       logos: this.configService.get<string>('r2.bucketLogos') ?? 'whatsell-logos',
       invoices: this.configService.get<string>('r2.bucketInvoices') ?? 'whatsell-invoices',
+      products: this.configService.get<string>('r2.bucketProducts') ?? 'whatsell-products',
     };
   }
 
