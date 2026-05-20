@@ -3,15 +3,21 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { OnboardingService } from './onboarding.service';
 import { OnboardingRepository } from './onboarding.repository';
 import { StorageService } from '../../common/services/storage.service';
+import { EncryptionService } from '../../common/services/encryption.service';
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
 const mockOnboardingRepository = {
   updateProfile: jest.fn(),
+  connectWhatsapp: jest.fn(),
 };
 
 const mockStorageService = {
   upload: jest.fn(),
+};
+
+const mockEncryptionService = {
+  encrypt: jest.fn(),
 };
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
@@ -47,6 +53,7 @@ describe('OnboardingService', () => {
         OnboardingService,
         { provide: OnboardingRepository, useValue: mockOnboardingRepository },
         { provide: StorageService, useValue: mockStorageService },
+        { provide: EncryptionService, useValue: mockEncryptionService },
       ],
     }).compile();
 
@@ -104,6 +111,68 @@ describe('OnboardingService', () => {
         BadRequestException,
       );
       expect(mockOnboardingRepository.updateProfile).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('connectWhatsapp', () => {
+    const WABA_ID = 'waba-account-123';
+    const RAW_TOKEN = 'EAAG...raw_token';
+    const ENCRYPTED_TOKEN = 'iv123=:tag456=:cipher789=';
+
+    beforeEach(() => {
+      mockEncryptionService.encrypt.mockReturnValue(ENCRYPTED_TOKEN);
+      mockOnboardingRepository.connectWhatsapp.mockResolvedValue({
+        whatsappBusinessAccountId: WABA_ID,
+      });
+    });
+
+    it('WABA ID + token valides → encrypt appelé avec token en clair, connectWhatsapp appelé avec token chiffré', async () => {
+      const result = await service.connectWhatsapp(TENANT_ID, {
+        whatsappBusinessAccountId: WABA_ID,
+        whatsappToken: RAW_TOKEN,
+      });
+
+      expect(mockEncryptionService.encrypt).toHaveBeenCalledWith(RAW_TOKEN);
+      expect(mockOnboardingRepository.connectWhatsapp).toHaveBeenCalledWith(
+        TENANT_ID,
+        { whatsappBusinessAccountId: WABA_ID, encryptedToken: ENCRYPTED_TOKEN },
+      );
+      expect(result).toEqual({ whatsappBusinessAccountId: WABA_ID });
+    });
+
+    it('WABA ID vide → lève BadRequestException, encrypt non appelé', async () => {
+      await expect(
+        service.connectWhatsapp(TENANT_ID, {
+          whatsappBusinessAccountId: '',
+          whatsappToken: RAW_TOKEN,
+        }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockEncryptionService.encrypt).not.toHaveBeenCalled();
+      expect(mockOnboardingRepository.connectWhatsapp).not.toHaveBeenCalled();
+    });
+
+    it('token vide → lève BadRequestException, encrypt non appelé', async () => {
+      await expect(
+        service.connectWhatsapp(TENANT_ID, {
+          whatsappBusinessAccountId: WABA_ID,
+          whatsappToken: '',
+        }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockEncryptionService.encrypt).not.toHaveBeenCalled();
+      expect(mockOnboardingRepository.connectWhatsapp).not.toHaveBeenCalled();
+    });
+
+    it('WABA ID avec uniquement des espaces → lève BadRequestException après trim', async () => {
+      await expect(
+        service.connectWhatsapp(TENANT_ID, {
+          whatsappBusinessAccountId: '   ',
+          whatsappToken: RAW_TOKEN,
+        }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockEncryptionService.encrypt).not.toHaveBeenCalled();
     });
   });
 });

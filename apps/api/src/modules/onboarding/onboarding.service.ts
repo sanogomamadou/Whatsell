@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ZodError } from 'zod';
-import { updateProfileSchema } from '@whatsell/shared';
+import { updateProfileSchema, connectWhatsappSchema, type ConnectWhatsappDto } from '@whatsell/shared';
 import { StorageService } from '../../common/services/storage.service';
+import { EncryptionService } from '../../common/services/encryption.service';
 import { OnboardingRepository } from './onboarding.repository';
 
 @Injectable()
@@ -9,6 +10,7 @@ export class OnboardingService {
   constructor(
     private readonly onboardingRepository: OnboardingRepository,
     private readonly storageService: StorageService,
+    private readonly encryptionService: EncryptionService,
   ) {}
 
   async updateProfile(
@@ -37,5 +39,31 @@ export class OnboardingService {
     }
 
     return this.onboardingRepository.updateProfile(tenantId, { name: validatedName, logoUrl });
+  }
+
+  async connectWhatsapp(
+    tenantId: string,
+    dto: ConnectWhatsappDto,
+  ): Promise<{ whatsappBusinessAccountId: string }> {
+    let validated: ConnectWhatsappDto;
+    try {
+      validated = connectWhatsappSchema.parse(dto);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        throw new BadRequestException(err.errors[0]?.message ?? 'Données invalides');
+      }
+      throw err;
+    }
+
+    let encryptedToken: string;
+    try {
+      encryptedToken = this.encryptionService.encrypt(validated.whatsappToken);
+    } catch {
+      throw new InternalServerErrorException('Erreur lors du chiffrement du token');
+    }
+    return this.onboardingRepository.connectWhatsapp(tenantId, {
+      whatsappBusinessAccountId: validated.whatsappBusinessAccountId,
+      encryptedToken,
+    });
   }
 }

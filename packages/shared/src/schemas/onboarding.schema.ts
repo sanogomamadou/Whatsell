@@ -9,3 +9,16 @@ export const updateProfileSchema = z.object({
 });
 
 export type UpdateProfileDto = z.infer<typeof updateProfileSchema>;
+
+export const connectWhatsappSchema = z.object({
+  whatsappBusinessAccountId: z
+    .string({ required_error: "L'identifiant du compte WhatsApp Business est obligatoire" })
+    .trim()
+    .min(1, "L'identifiant du compte WhatsApp Business est obligatoire"),
+  whatsappToken: z
+    .string({ required_error: "Le token d'accès WhatsApp Business est obligatoire" })
+    .trim()
+    .min(1, "Le token d'accès WhatsApp Business est obligatoire"),
+});
+
+export type ConnectWhatsappDto = z.infer<typeof connectWhatsappSchema>;

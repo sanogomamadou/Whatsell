@@ -2,11 +2,13 @@ import {
   Body,
   Controller,
   Patch,
+  Post,
   UnsupportedMediaTypeException,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { type ConnectWhatsappDto } from '@whatsell/shared';
 import { CurrentTenant } from '../../common/decorators';
 import { OnboardingService } from './onboarding.service';
 
@@ -46,5 +48,13 @@ export class OnboardingController {
     @UploadedFile() logoFile?: Express.Multer.File,
   ): Promise<{ name: string; logoUrl: string | null }> {
     return this.onboardingService.updateProfile(tenantId, name, logoFile);
+  }
+
+  @Post('whatsapp-connect')
+  async connectWhatsapp(
+    @CurrentTenant() tenantId: string,
+    @Body() body: ConnectWhatsappDto,
+  ): Promise<{ whatsappBusinessAccountId: string }> {
+    return this.onboardingService.connectWhatsapp(tenantId, body);
   }
 }
