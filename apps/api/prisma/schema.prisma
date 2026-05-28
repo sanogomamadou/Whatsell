@@ -47,6 +47,9 @@ model Tenant {
   whatsappBusinessAccountId String?
   whatsappToken             String?
   onboardingCompletedAt     DateTime?
+  // Règles de paiement (configurées à l'étape 4 du wizard)
+  advancePercentage     Int      @default(50)   // 0–100 entier, jamais Float
+  acceptedPaymentModes  String[] @default([])   // ["orange_money","moov_money","cash_on_delivery"]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -59,8 +62,28 @@ model Tenant {
   invoices      Invoice[]
   subscriptions Subscription[]
   pushTokens    PushToken[]
+  auditLogs     AuditLog[]
 
   @@map("tenants")
+}
+
+// ─── AUDIT LOG ───────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  tenantId   String
+  userId     String?
+  action     String   // ex: "payment_rules.updated"
+  resource   String   // ex: "tenant"
+  resourceId String?
+  metadata   Json?    // données contextuelles
+  createdAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, action])
+  @@map("audit_logs")
 }
 
 // ─── USER ────────────────────────────────────────────

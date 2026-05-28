@@ -5,4 +5,5 @@
 export * from './auth.schema';
 export * from './notifications.schema';
 export * from './onboarding.schema';
+export * from './payment-rules.schema';
 export * from './product.schema';
