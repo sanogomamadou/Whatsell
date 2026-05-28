@@ -160,3 +160,34 @@
 - D-04: Upload R2 silencieux en production — catch avale toutes erreurs sans logging ni distinction dev/prod. Pre-existing depuis story 2-2 (D-06)
 - D-05: MIME spoofing — validation MIME côté serveur basée sur l'en-tête `Content-Type` client, pas sur les magic bytes. Nécessite le package `file-type`. Hardening sécurité post-MVP
 - D-06: Race condition count/findMany en pagination — `Promise.all` non atomique, incohérence `total`/`items.length` possible sous écriture concurrente. Faible risque pour un catalogue d'onboarding
+
+## Deferred from: code review of 2-5-wizard-etape-4-regles-de-paiement (2026-05-21)
+
+- D-01: `TEXT[]` sans contrainte CHECK PostgreSQL sur `acceptedPaymentModes` — validation application-level (Zod) suffisante en V1 ; un appel DB direct peut stocker des valeurs hors enum
+- D-02: Constante `PAYMENT_MODES` non exportée depuis `packages/shared` — les consommateurs doivent redéclarer la liste ou utiliser `PaymentMode` ; amélioration mineure à grouper avec une story design system
+- D-03: Timers multiples dans `useEffect` si `router` change d'identité — référence stable dans Next.js App Router aujourd'hui, fragile aux upgrades Next.js majeurs [apps/web/src/app/onboarding/payment/page.tsx:45]
+- D-04: `toggleMode` opère sur un snapshot potentiellement stale de `selectedModes` — les browsers sérialisent les click events, risque réel uniquement avec keyboard navigation rapide [apps/web/src/app/onboarding/payment/page.tsx:51]
+- D-05: Validation croisée `advancePercentage`/`acceptedPaymentModes` absente — ex: 0% + Orange Money est sémantiquement incohérent ; décision business hors scope spec 2.5
+- D-06: `audit_logs` sans index sur `userId` et `createdAt` — requêtes "actions d'un utilisateur" ou "derniers 30 jours" seront full-scan ; optimisation à ajouter avant mise en production du dashboard admin (Story 9)
+- D-07: `acceptedPaymentModes DEFAULT '{}'` en DB — tenants créés avant cette migration ont un tableau vide qui échouerait la validation Zod `min(1)` si lu et re-validé ; aucun endpoint read-validate actuel
+- D-08: PATCH concurrent last-write-wins sans optimistic locking — deux onglets simultanés peuvent s'écraser mutuellement ; standard pour un wizard d'onboarding, à revoir si édition multi-utilisateur requise
+- D-09: Champs `resource`/`resourceId` dans `AuditLog` ajoutés au-delà de l'AC4 — extension intentionnelle et utile, non documentée dans la spec ; à formaliser dans l'architecture Story 9 (panel admin)
+- D-10: Délai 1500 ms avant redirection vers `/onboarding/activate` non spécifié dans AC8 — amélioration UX (badge "Enregistré") acceptable, à standardiser si d'autres étapes adoptent le même pattern
+- D-11: `z.coerce.number()` à la place de `z.number()` strict — JSON body typé par NestJS, coerce sécurisé en pratique ; risque uniquement si l'endpoint est appelé via form-data (non prévu)
+- D-12: `AuditLog` sans FK sur `userId` — design intentionnel : un log d'audit doit survivre à la suppression de l'utilisateur pour des raisons légales/compliance ; cohérent avec les pratiques d'audit standards
+
+## Deferred from: code review of 2-6-wizard-etape-5-activation-de-lagent (2026-05-26)
+
+- D-01: Re-activation génère un doublon d'audit — chaque appel à `POST /activate` crée une nouvelle entrée `agent.activated` dans audit_logs, même sur tenant déjà activé. Par design spec (AC 3 : overwrite silencieux), mais dégrade la lisibilité de l'audit timeline. À filtrer côté dashboard admin (Story 9).
+- D-02: Détection d'erreur HTTP fragile via `message.includes('401')` dans la page `/onboarding/activate` — pattern pré-existant de D-02 (story 2-3/2-4), nécessite un refactor global de `api.ts` pour une classe `ApiError { status: number }` typée.
+- D-03: `triggerCelebration` sessionStorage déduplication — si l'utilisateur revient sur `/onboarding/activate` dans la même session après activation, `CELEBRATION_TRIGGERS.FIRST_AGENT_ACTIVATION` est déjà en sessionStorage et le toast de célébration ne se déclenche plus. Edge case mineur, navigation retour post-activation non prévue par le flow.
+- D-04: Risque boucle de redirection après activation — `router.push('/')` redirige vers le dashboard ; si le root guard vérifie `onboardingCompletedAt` via le JWT (non rafraîchi) avec un délai de propagation, l'utilisateur peut être renvoyé vers `/onboarding`. Dépend de l'implémentation du root guard (Story 2.7+).
+- D-05: État squelette permanent si l'API renvoie `{ data: null }` — `setSummary(null)` laisse le composant dans l'état `!summary && !loadError` avec le squelette affiché en boucle. Cas impossible avec l'API actuelle (Prisma lève P2025 → NotFoundException → 404 côté frontend), à surveiller si la forme de la réponse évolue.
+
+## Deferred from: code review of 2-7-gestion-du-profil-et-reconnexion-whatsapp (2026-05-28)
+
+- D-01: Ancien logo non supprimé de R2 lors d'un re-upload — chaque `PATCH /settings/profile` avec logo crée un nouvel objet R2 sans supprimer l'ancien. Croissance illimitée du stockage. Même contrainte que D-02 story 2-2. Nécessite `storageService.delete(oldKey)` dans `SettingsService.updateProfile` quand `profile.logoUrl` existant.
+- D-02: Pattern `message.includes('statusCode')` pour détecter les erreurs API dans `page.tsx` — fragile si le format des messages de `apiFormData`/`apiPost` évolue. Même problème global que D-02 story 2-3/2-4. Refactor global `ApiError { status: number }` requis.
+- D-03: Validation MIME type via `file.mimetype` (Content-Type fourni par le client, spoofable) dans `settings.controller.ts` — limitation architecturale identique à `onboarding.controller.ts`. Solution : vérification magic-bytes côté serveur avec le package `file-type`. À traiter en Epic 3 (catalogue + uploads).
+- D-04: `logoUrl` stocke la clé R2 brute `{tenantId}/logos/{uuid}` et non une URL publique — même contrainte que D-03 story 2-4. Résolution : génération d'URL signée ou CDN public, à planifier quand le rendu des logos est requis.
+- D-05: `loadProfile` non-stabilisée (`useCallback` absent), warning ESLint supprimé via `// eslint-disable-next-line react-hooks/exhaustive-deps` — pattern pré-existant dans toutes les pages wizard. Mineur tant que la fonction ne capture pas de state supplémentaire.

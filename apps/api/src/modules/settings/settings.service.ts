@@ -3,23 +3,25 @@ import { ZodError } from 'zod';
 import {
   updateProfileSchema,
   connectWhatsappSchema,
-  paymentRulesSchema,
   type ConnectWhatsappDto,
-  type PaymentRulesDto,
 } from '@whatsell/shared';
 import { StorageService } from '../../common/services/storage.service';
 import { EncryptionService } from '../../common/services/encryption.service';
 import { AuditService } from '../audit/audit.service';
-import { OnboardingRepository, OnboardingSummary } from './onboarding.repository';
+import { SettingsRepository, type ProfileSettings } from './settings.repository';
 
 @Injectable()
-export class OnboardingService {
+export class SettingsService {
   constructor(
-    private readonly onboardingRepository: OnboardingRepository,
+    private readonly settingsRepository: SettingsRepository,
     private readonly storageService: StorageService,
     private readonly encryptionService: EncryptionService,
     private readonly auditService: AuditService,
   ) {}
+
+  async getProfileSettings(tenantId: string): Promise<ProfileSettings> {
+    return this.settingsRepository.getProfileSettings(tenantId);
+  }
 
   async updateProfile(
     tenantId: string,
@@ -46,11 +48,12 @@ export class OnboardingService {
       );
     }
 
-    return this.onboardingRepository.updateProfile(tenantId, { name: validatedName, logoUrl });
+    return this.settingsRepository.updateProfile(tenantId, { name: validatedName, logoUrl });
   }
 
-  async connectWhatsapp(
+  async reconnectWhatsapp(
     tenantId: string,
+    userId: string,
     dto: ConnectWhatsappDto,
   ): Promise<{ whatsappBusinessAccountId: string }> {
     let validated: ConnectWhatsappDto;
@@ -69,69 +72,22 @@ export class OnboardingService {
     } catch {
       throw new InternalServerErrorException('Erreur lors du chiffrement du token');
     }
-    return this.onboardingRepository.connectWhatsapp(tenantId, {
+
+    const result = await this.settingsRepository.updateWhatsappConnection(tenantId, {
       whatsappBusinessAccountId: validated.whatsappBusinessAccountId,
       encryptedToken,
     });
-  }
 
-  async getOnboardingSummary(tenantId: string): Promise<OnboardingSummary> {
-    return this.onboardingRepository.getOnboardingSummary(tenantId);
-  }
-
-  async activateAgent(
-    tenantId: string,
-    userId: string,
-  ): Promise<{ activatedAt: string }> {
-    const result = await this.onboardingRepository.activateAgent(tenantId);
-
+    // NFR9 — reconnexion WhatsApp = action sensible. AuditService.log() absorbs exceptions
+    // internally; the try/catch here protects against mock behavior in tests.
     try {
       await this.auditService.log({
         tenantId,
         userId,
-        action: 'agent.activated',
+        action: 'whatsapp.reconnected',
         resource: 'tenant',
         resourceId: tenantId,
-        metadata: { activatedAt: result.activatedAt.toISOString() },
-      });
-    } catch {
-      // intentionally swallowed — audit failure must not block the main operation
-    }
-
-    return { activatedAt: result.activatedAt.toISOString() };
-  }
-
-  async updatePaymentRules(
-    tenantId: string,
-    userId: string,
-    dto: PaymentRulesDto,
-  ): Promise<{ advancePercentage: number; acceptedPaymentModes: string[] }> {
-    let validated: PaymentRulesDto;
-    try {
-      validated = paymentRulesSchema.parse(dto);
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestException(err.errors[0]?.message ?? 'Données invalides');
-      }
-      throw err;
-    }
-
-    const result = await this.onboardingRepository.updatePaymentRules(tenantId, {
-      advancePercentage: validated.advancePercentage,
-      acceptedPaymentModes: validated.acceptedPaymentModes,
-    });
-
-    try {
-      await this.auditService.log({
-        tenantId,
-        userId,
-        action: 'payment_rules.updated',
-        resource: 'tenant',
-        resourceId: tenantId,
-        metadata: {
-          advancePercentage: validated.advancePercentage,
-          acceptedPaymentModes: validated.acceptedPaymentModes,
-        },
+        metadata: { whatsappBusinessAccountId: validated.whatsappBusinessAccountId },
       });
     } catch {
       // intentionally swallowed — audit failure must not block the main operation

@@ -28,6 +28,9 @@ import { EventsModule } from './modules/events/events.module';
 import { EventsController } from './modules/events/events.controller';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { NotificationsController } from './modules/notifications/notifications.controller';
+import { AuditModule } from './modules/audit/audit.module';
+import { SettingsModule } from './modules/settings/settings.module';
+import { SettingsController } from './modules/settings/settings.controller';
 
 @Module({
   imports: [
@@ -77,12 +80,14 @@ import { NotificationsController } from './modules/notifications/notifications.c
     CommonModule,
 
     // Modules domaines
+    AuditModule,
     AuthModule,
     OnboardingModule,
     ProductsModule,
     QueuesModule,
     EventsModule,
     NotificationsModule,
+    SettingsModule,
   ],
   controllers: [AppController],
   providers: [
@@ -107,6 +112,6 @@ export class AppModule implements NestModule {
     // AuthController et AppController (health) sont naturellement exclus.
     consumer
       .apply(TenantMiddleware)
-      .forRoutes(OnboardingController, EventsController, NotificationsController, ProductsController);
+      .forRoutes(OnboardingController, EventsController, NotificationsController, ProductsController, SettingsController);
   }
 }
