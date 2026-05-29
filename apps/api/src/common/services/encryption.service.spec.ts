@@ -56,7 +56,7 @@ describe('EncryptionService', () => {
   it('clé de mauvaise longueur throw une erreur', () => {
     configService.get.mockReturnValue('cle-trop-courte');
     expect(() => service.encrypt('test')).toThrow(
-      'ENCRYPTION_KEY doit être exactement 32 caractères',
+      'ENCRYPTION_KEY doit produire exactement 32 octets (AES-256)',
     );
   });
 });

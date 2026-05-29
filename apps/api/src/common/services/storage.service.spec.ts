@@ -70,67 +70,46 @@ describe('StorageService', () => {
   });
 
   describe('constructor', () => {
-    it('should throw when accountId is missing', async () => {
+    async function buildWithMissingCred(overrides: Record<string, string>) {
       const badConfig = {
         get: jest.fn((key: string) => {
-          if (key === 'r2.accountId') return '';
-          if (key === 'r2.accessKeyId') return 'key';
-          if (key === 'r2.secretAccessKey') return 'secret';
-          return undefined;
+          const base: Record<string, string> = {
+            'r2.accountId': 'account',
+            'r2.accessKeyId': 'key',
+            'r2.secretAccessKey': 'secret',
+          };
+          return overrides[key] !== undefined ? overrides[key] : base[key];
         }),
       };
+      const module = await Test.createTestingModule({
+        providers: [
+          StorageService,
+          { provide: ConfigService, useValue: badConfig },
+          { provide: TenantContextService, useValue: mockTenantContextService },
+        ],
+      }).compile();
+      return module.get(StorageService);
+    }
 
+    it('should compile without throwing when accountId is missing (graceful degradation)', async () => {
+      const svc = await buildWithMissingCred({ 'r2.accountId': '' });
       await expect(
-        Test.createTestingModule({
-          providers: [
-            StorageService,
-            { provide: ConfigService, useValue: badConfig },
-            { provide: TenantContextService, useValue: mockTenantContextService },
-          ],
-        }).compile(),
-      ).rejects.toThrow('configuration R2 incomplète');
+        svc.upload('tenant', 'receipts', Buffer.from('x'), 'image/jpeg'),
+      ).rejects.toThrow('R2 non configuré');
     });
 
-    it('should throw when accessKeyId is missing', async () => {
-      const badConfig = {
-        get: jest.fn((key: string) => {
-          if (key === 'r2.accountId') return 'account';
-          if (key === 'r2.accessKeyId') return '';
-          if (key === 'r2.secretAccessKey') return 'secret';
-          return undefined;
-        }),
-      };
-
+    it('should compile without throwing when accessKeyId is missing (graceful degradation)', async () => {
+      const svc = await buildWithMissingCred({ 'r2.accessKeyId': '' });
       await expect(
-        Test.createTestingModule({
-          providers: [
-            StorageService,
-            { provide: ConfigService, useValue: badConfig },
-            { provide: TenantContextService, useValue: mockTenantContextService },
-          ],
-        }).compile(),
-      ).rejects.toThrow('configuration R2 incomplète');
+        svc.upload('tenant', 'receipts', Buffer.from('x'), 'image/jpeg'),
+      ).rejects.toThrow('R2 non configuré');
     });
 
-    it('should throw when secretAccessKey is missing', async () => {
-      const badConfig = {
-        get: jest.fn((key: string) => {
-          if (key === 'r2.accountId') return 'account';
-          if (key === 'r2.accessKeyId') return 'key';
-          if (key === 'r2.secretAccessKey') return '';
-          return undefined;
-        }),
-      };
-
+    it('should compile without throwing when secretAccessKey is missing (graceful degradation)', async () => {
+      const svc = await buildWithMissingCred({ 'r2.secretAccessKey': '' });
       await expect(
-        Test.createTestingModule({
-          providers: [
-            StorageService,
-            { provide: ConfigService, useValue: badConfig },
-            { provide: TenantContextService, useValue: mockTenantContextService },
-          ],
-        }).compile(),
-      ).rejects.toThrow('configuration R2 incomplète');
+        svc.upload('tenant', 'receipts', Buffer.from('x'), 'image/jpeg'),
+      ).rejects.toThrow('R2 non configuré');
     });
   });
 
