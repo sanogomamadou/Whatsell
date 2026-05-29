@@ -19,6 +19,7 @@ type StockLevelSummary = {
   variantKey: string;
   quantity: number;
   alertThreshold: number;
+  isActive: boolean;
 };
 
 export type ProductDetail = ProductResult & {
@@ -26,6 +27,14 @@ export type ProductDetail = ProductResult & {
   createdAt: Date;
   updatedAt: Date;
   stockLevels: StockLevelSummary[];
+};
+
+export type VariantResult = {
+  id: string;
+  variantKey: string;
+  quantity: number;
+  alertThreshold: number;
+  isActive: boolean;
 };
 
 @Injectable()
@@ -93,7 +102,7 @@ export class ProductsRepository {
         createdAt: true,
         updatedAt: true,
         stockLevels: {
-          select: { id: true, variantKey: true, quantity: true, alertThreshold: true },
+          select: { id: true, variantKey: true, quantity: true, alertThreshold: true, isActive: true },
           orderBy: { variantKey: 'asc' },
         },
       },
@@ -115,6 +124,59 @@ export class ProductsRepository {
   async deleteById(id: string, tenantId: string): Promise<{ id: string }> {
     await this.prisma.product.delete({ where: { id, tenantId } });
     return { id };
+  }
+
+  async addVariantToProduct(
+    productId: string,
+    tenantId: string,
+    data: { variantKey: string; quantity: number },
+  ): Promise<VariantResult> {
+    return this.prisma.stockLevel.create({
+      data: {
+        tenantId,
+        productId,
+        variantKey: data.variantKey,
+        quantity: data.quantity,
+      },
+      select: { id: true, variantKey: true, quantity: true, alertThreshold: true, isActive: true },
+    });
+  }
+
+  async findVariantByIdAndProduct(
+    variantId: string,
+    productId: string,
+    tenantId: string,
+  ): Promise<VariantResult | null> {
+    return this.prisma.stockLevel.findFirst({
+      where: { id: variantId, productId, tenantId },
+      select: { id: true, variantKey: true, quantity: true, alertThreshold: true, isActive: true },
+    });
+  }
+
+  async deleteVariantById(
+    variantId: string,
+    productId: string,
+    tenantId: string,
+  ): Promise<{ id: string }> {
+    await this.prisma.stockLevel.delete({ where: { id: variantId, productId, tenantId } });
+    return { id: variantId };
+  }
+
+  async deactivateVariantById(
+    variantId: string,
+    productId: string,
+    tenantId: string,
+  ): Promise<VariantResult> {
+    return this.prisma.stockLevel.update({
+      where: { id: variantId, productId, tenantId },
+      data: { isActive: false },
+      select: { id: true, variantKey: true, quantity: true, alertThreshold: true, isActive: true },
+    });
+  }
+
+  async countOrderItemsByVariantId(_variantId: string): Promise<number> {
+    // TODO Story 4.1: replace with real orderItem count when table exists
+    return 0;
   }
 
   async toggleActive(id: string, tenantId: string): Promise<ProductResult | null> {

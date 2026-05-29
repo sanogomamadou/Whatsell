@@ -213,6 +213,16 @@
 - D-02: Pas de moyen d'effacer `imageUrl` existante via PATCH — `updateProductSchema` n'expose pas de champ `imageUrl: null`. Gap design produit. **Why:** hors scope story 3.2, à traiter lors de la story frontend catalogue (3.6) si le besoin est confirmé. [products.service.ts:updateProduct]
 - D-03: `deleteById` retourne `{ id }` depuis le paramètre d'entrée et non depuis le retour Prisma — correct en pratique car Prisma lève toujours P2025 en cas d'échec. Mineur. [products.repository.ts:deleteById]
 
+## Deferred from: code review of 3-3-gestion-des-variantes-libres (2026-05-29)
+
+- D-01: `countOrderItemsByVariantId` retourne toujours 0 (stub) — le chemin soft-delete de `deleteVariant` est structurellement inatteignable jusqu'à Story 4.1 qui remplacera le stub par une vraie requête `prisma.orderItem.count`. [products.repository.ts:countOrderItemsByVariantId]
+- D-02: Race condition TOCTOU entre `countOrderItemsByVariantId` et `deleteVariantById` — si une commande est créée entre les deux appels, la variante sera hard-deletée malgré des OrderItems. Nécessite une transaction Prisma ou un lock optimiste. Seulement pertinent après remplacement du stub Story 4.1. [products.service.ts:deleteVariant]
+- D-03: Race condition P2003 FK violation — si le produit est supprimé entre `findByIdAndTenant` et `addVariantToProduct`, Prisma lèverait une FK violation non gérée (500 au lieu de 404). Probabilité très faible, pattern TOCTOU pré-existant. [products.service.ts:addVariant]
+- D-04: `@Body() body: unknown` bypass NestJS ValidationPipe — valide en V1 car Zod dans le service assure la validation, mais contourne le pipe global. Pattern pré-existant sur tous les endpoints de ProductsController. [products.controller.ts]
+- D-05: Opérations sur variantes non bloquées si produit inactif — `addVariant` et `deleteVariant` n'interdisent pas les opérations si `product.isActive === false`. Règle métier hors scope spec 3.3, à définir lors de la story frontend catalogue (3.6). [products.service.ts]
+- D-06: `StockLevelSummary` ≈ `VariantResult` — duplication de types quasi-identiques dans products.repository.ts. À unifier lors d'un refactor du module products. [products.repository.ts]
+- D-07: IDs internes (`productId`, `variantId`) exposés dans les messages d'erreur 404 — facilite l'énumération de ressources. Pattern pré-existant dans tout ProductsService depuis Story 3.2. [products.service.ts]
+
 ## Configuration pré-production : Resend (email transactionnel)
 
 > **Contexte** : pendant les tests story 2.8, la config email utilise le domaine demo Resend (`onboarding@resend.dev`). Ce domaine ne peut pas être utilisé en production.

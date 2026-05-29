@@ -186,6 +186,7 @@ model StockLevel {
   // Contrainte >= 0 obligatoire au niveau service/repository (Prisma ne supporte pas CHECK inline)
   quantity       Int      @default(0)
   alertThreshold Int      @default(5)
+  isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

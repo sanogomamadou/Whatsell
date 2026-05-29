@@ -1,17 +1,23 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { ZodError } from 'zod';
 
 function isPrismaP2025(err: unknown): boolean {
   return typeof err === 'object' && err !== null && 'code' in err && (err as { code: unknown }).code === 'P2025';
 }
+
+function isPrismaP2002(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && 'code' in err && (err as { code: unknown }).code === 'P2002';
+}
 import {
   createProductSchema,
+  createStockLevelSchema,
   updateProductSchema,
   type CreateProductDto,
+  type CreateStockLevelDto,
   type UpdateProductDto,
 } from '@whatsell/shared';
 import { StorageService } from '../../common/services/storage.service';
-import { ProductsRepository, type ProductDetail } from './products.repository';
+import { ProductsRepository, type ProductDetail, type VariantResult } from './products.repository';
 
 type ProductResult = {
   id: string;
@@ -134,6 +140,58 @@ export class ProductsService {
       return await this.productsRepository.deleteById(id, tenantId);
     } catch (err) {
       if (isPrismaP2025(err)) throw new NotFoundException(`Produit #${id} introuvable`);
+      throw err;
+    }
+  }
+
+  async addVariant(tenantId: string, productId: string, dto: unknown): Promise<VariantResult> {
+    let validated: CreateStockLevelDto;
+    try {
+      validated = createStockLevelSchema.parse(dto);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        throw new BadRequestException(err.errors[0]?.message ?? 'Données invalides');
+      }
+      throw err;
+    }
+
+    const product = await this.productsRepository.findByIdAndTenant(productId, tenantId);
+    if (!product) throw new NotFoundException(`Produit #${productId} introuvable`);
+
+    try {
+      return await this.productsRepository.addVariantToProduct(productId, tenantId, {
+        variantKey: validated.variantKey,
+        quantity: validated.quantity ?? 0,
+      });
+    } catch (err) {
+      if (isPrismaP2002(err)) {
+        throw new ConflictException('Une variante avec cette clé existe déjà sur ce produit');
+      }
+      throw err;
+    }
+  }
+
+  async deleteVariant(
+    tenantId: string,
+    productId: string,
+    variantId: string,
+  ): Promise<{ id: string } | VariantResult> {
+    const product = await this.productsRepository.findByIdAndTenant(productId, tenantId);
+    if (!product) throw new NotFoundException(`Produit #${productId} introuvable`);
+
+    const variant = await this.productsRepository.findVariantByIdAndProduct(variantId, productId, tenantId);
+    if (!variant) throw new NotFoundException(`Variante #${variantId} introuvable`);
+
+    const orderCount = await this.productsRepository.countOrderItemsByVariantId(variantId);
+
+    if (orderCount > 0) {
+      return this.productsRepository.deactivateVariantById(variantId, productId, tenantId);
+    }
+
+    try {
+      return await this.productsRepository.deleteVariantById(variantId, productId, tenantId);
+    } catch (err) {
+      if (isPrismaP2025(err)) throw new NotFoundException(`Variante #${variantId} introuvable`);
       throw err;
     }
   }

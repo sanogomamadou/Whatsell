@@ -106,4 +106,22 @@ export class ProductsController {
   ) {
     return this.productsService.toggleProduct(tenantId, id);
   }
+
+  @Post(':id/variants')
+  async addVariant(
+    @CurrentTenant() tenantId: string,
+    @Param('id') productId: string,
+    @Body() body: unknown,
+  ) {
+    return this.productsService.addVariant(tenantId, productId, body);
+  }
+
+  @Delete(':id/variants/:variantId')
+  async deleteVariant(
+    @CurrentTenant() tenantId: string,
+    @Param('id') productId: string,
+    @Param('variantId') variantId: string,
+  ) {
+    return this.productsService.deleteVariant(tenantId, productId, variantId);
+  }
 }

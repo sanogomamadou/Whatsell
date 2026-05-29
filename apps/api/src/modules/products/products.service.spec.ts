@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProductsService } from './products.service';
 import { ProductsRepository } from './products.repository';
@@ -13,6 +13,11 @@ const mockProductsRepository = {
   updateById: jest.fn(),
   deleteById: jest.fn(),
   toggleActive: jest.fn(),
+  addVariantToProduct: jest.fn(),
+  findVariantByIdAndProduct: jest.fn(),
+  deleteVariantById: jest.fn(),
+  deactivateVariantById: jest.fn(),
+  countOrderItemsByVariantId: jest.fn(),
 };
 
 const mockStorageService = {
@@ -23,6 +28,7 @@ const mockStorageService = {
 
 const TENANT_ID = 'tenant-uuid-1';
 const PRODUCT_ID = 'product-uuid-1';
+const VARIANT_ID = 'variant-uuid-1';
 
 const PRODUCT_RESULT = {
   id: PRODUCT_ID,
@@ -38,8 +44,16 @@ const PRODUCT_DETAIL = {
   createdAt: new Date('2026-05-29T10:00:00Z'),
   updatedAt: new Date('2026-05-29T10:00:00Z'),
   stockLevels: [
-    { id: 'stock-uuid-1', variantKey: 'Standard', quantity: 10, alertThreshold: 5 },
+    { id: 'stock-uuid-1', variantKey: 'Standard', quantity: 10, alertThreshold: 5, isActive: true },
   ],
+};
+
+const VARIANT_RESULT = {
+  id: VARIANT_ID,
+  variantKey: 'Taille:L',
+  quantity: 5,
+  alertThreshold: 5,
+  isActive: true,
 };
 
 const mockImageFile = {
@@ -64,6 +78,11 @@ describe('ProductsService', () => {
     mockProductsRepository.updateById.mockResolvedValue(PRODUCT_RESULT);
     mockProductsRepository.deleteById.mockResolvedValue({ id: PRODUCT_ID });
     mockProductsRepository.toggleActive.mockResolvedValue({ ...PRODUCT_RESULT, isActive: false });
+    mockProductsRepository.addVariantToProduct.mockResolvedValue(VARIANT_RESULT);
+    mockProductsRepository.findVariantByIdAndProduct.mockResolvedValue(VARIANT_RESULT);
+    mockProductsRepository.deleteVariantById.mockResolvedValue({ id: VARIANT_ID });
+    mockProductsRepository.deactivateVariantById.mockResolvedValue({ ...VARIANT_RESULT, isActive: false });
+    mockProductsRepository.countOrderItemsByVariantId.mockResolvedValue(0);
     mockStorageService.upload.mockResolvedValue('https://cdn.example.com/products/produit.png');
 
     const module: TestingModule = await Test.createTestingModule({
@@ -276,6 +295,105 @@ describe('ProductsService', () => {
 
       await expect(service.deleteProduct(TENANT_ID, 'unknown-id')).rejects.toThrow(NotFoundException);
       expect(mockProductsRepository.deleteById).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─── addVariant ───────────────────────────────────────────────────────────
+
+  describe('addVariant', () => {
+    it('variantKey + quantity valides → addVariantToProduct appelé, retourne VariantResult', async () => {
+      const result = await service.addVariant(TENANT_ID, PRODUCT_ID, {
+        variantKey: 'Taille:L',
+        quantity: 5,
+      });
+
+      expect(mockProductsRepository.findByIdAndTenant).toHaveBeenCalledWith(PRODUCT_ID, TENANT_ID);
+      expect(mockProductsRepository.addVariantToProduct).toHaveBeenCalledWith(
+        PRODUCT_ID,
+        TENANT_ID,
+        { variantKey: 'Taille:L', quantity: 5 },
+      );
+      expect(result).toEqual(VARIANT_RESULT);
+    });
+
+    it('variantKey vide → BadRequestException, addVariantToProduct non appelé', async () => {
+      await expect(
+        service.addVariant(TENANT_ID, PRODUCT_ID, { variantKey: '', quantity: 0 }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockProductsRepository.addVariantToProduct).not.toHaveBeenCalled();
+    });
+
+    it('quantity négative → BadRequestException, addVariantToProduct non appelé', async () => {
+      await expect(
+        service.addVariant(TENANT_ID, PRODUCT_ID, { variantKey: 'Taille:L', quantity: -1 }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockProductsRepository.addVariantToProduct).not.toHaveBeenCalled();
+    });
+
+    it('produit absent → NotFoundException, addVariantToProduct non appelé', async () => {
+      mockProductsRepository.findByIdAndTenant.mockResolvedValue(null);
+
+      await expect(
+        service.addVariant(TENANT_ID, 'unknown-product', { variantKey: 'Taille:L', quantity: 0 }),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(mockProductsRepository.addVariantToProduct).not.toHaveBeenCalled();
+    });
+
+    it('variantKey déjà existant (P2002) → ConflictException', async () => {
+      const p2002Error = Object.assign(new Error('Unique constraint'), { code: 'P2002' });
+      mockProductsRepository.addVariantToProduct.mockRejectedValue(p2002Error);
+
+      await expect(
+        service.addVariant(TENANT_ID, PRODUCT_ID, { variantKey: 'Standard', quantity: 0 }),
+      ).rejects.toThrow(ConflictException);
+    });
+  });
+
+  // ─── deleteVariant ────────────────────────────────────────────────────────
+
+  describe('deleteVariant', () => {
+    it('variante sans commandes → deleteVariantById appelé, retourne { id }', async () => {
+      const result = await service.deleteVariant(TENANT_ID, PRODUCT_ID, VARIANT_ID);
+
+      expect(mockProductsRepository.findByIdAndTenant).toHaveBeenCalledWith(PRODUCT_ID, TENANT_ID);
+      expect(mockProductsRepository.findVariantByIdAndProduct).toHaveBeenCalledWith(VARIANT_ID, PRODUCT_ID, TENANT_ID);
+      expect(mockProductsRepository.countOrderItemsByVariantId).toHaveBeenCalledWith(VARIANT_ID);
+      expect(mockProductsRepository.deleteVariantById).toHaveBeenCalledWith(VARIANT_ID, PRODUCT_ID, TENANT_ID);
+      expect(mockProductsRepository.deactivateVariantById).not.toHaveBeenCalled();
+      expect(result).toEqual({ id: VARIANT_ID });
+    });
+
+    it('variante avec commandes (count > 0) → deactivateVariantById appelé, retourne VariantResult avec isActive=false', async () => {
+      mockProductsRepository.countOrderItemsByVariantId.mockResolvedValue(3);
+
+      const result = await service.deleteVariant(TENANT_ID, PRODUCT_ID, VARIANT_ID);
+
+      expect(mockProductsRepository.deactivateVariantById).toHaveBeenCalledWith(VARIANT_ID, PRODUCT_ID, TENANT_ID);
+      expect(mockProductsRepository.deleteVariantById).not.toHaveBeenCalled();
+      expect((result as { isActive: boolean }).isActive).toBe(false);
+    });
+
+    it('produit absent → NotFoundException, deleteVariantById non appelé', async () => {
+      mockProductsRepository.findByIdAndTenant.mockResolvedValue(null);
+
+      await expect(
+        service.deleteVariant(TENANT_ID, 'unknown-product', VARIANT_ID),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(mockProductsRepository.deleteVariantById).not.toHaveBeenCalled();
+    });
+
+    it('variante absente → NotFoundException, deleteVariantById non appelé', async () => {
+      mockProductsRepository.findVariantByIdAndProduct.mockResolvedValue(null);
+
+      await expect(
+        service.deleteVariant(TENANT_ID, PRODUCT_ID, 'unknown-variant'),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(mockProductsRepository.deleteVariantById).not.toHaveBeenCalled();
     });
   });
 
