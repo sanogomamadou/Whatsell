@@ -5,3 +5,4 @@ export { MobileNavBar } from './MobileNavBar';
 export { OnboardingStep } from './OnboardingStep';
 export { CelebrationToast, CELEBRATION_TRIGGERS } from './CelebrationToast';
 export { NotificationPermissionPrompt } from './NotificationPermissionPrompt';
+export { TrialExpiryBanner } from './TrialExpiryBanner';

@@ -7,9 +7,11 @@ import { StockAlertsProcessor } from './processors/stock-alerts.processor';
 import { AdvisorAlertsProcessor } from './processors/advisor-alerts.processor';
 import { TrialExpiryProcessor } from './processors/trial-expiry.processor';
 import { WhatsappHealthCheckProcessor } from './processors/whatsapp-health-check.processor';
+import { SubscriptionsModule } from '../modules/subscriptions/subscriptions.module';
 
 @Module({
   imports: [
+    SubscriptionsModule,
     BullModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {

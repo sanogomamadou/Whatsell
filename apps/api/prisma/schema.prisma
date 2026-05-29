@@ -266,8 +266,9 @@ model Subscription {
   tenantId           String           @unique
   tier               SubscriptionTier @default(FREE)
   ordersUsed         Int              @default(0)
-  ordersLimit        Int              @default(50)
+  ordersLimit        Int              @default(20)
   trialEndsAt        DateTime?
+  warningSentAt      DateTime?
   currentPeriodStart DateTime         @default(now())
   currentPeriodEnd   DateTime
   createdAt          DateTime         @default(now())

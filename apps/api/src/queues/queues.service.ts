@@ -1,9 +1,9 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 
 @Injectable()
-export class QueuesService {
+export class QueuesService implements OnModuleInit {
   private readonly logger = new Logger(QueuesService.name);
 
   constructor(
@@ -13,6 +13,21 @@ export class QueuesService {
     @InjectQueue('trial-expiry') private readonly trialExpiryQueue: Queue,
     @InjectQueue('whatsapp-health-check') private readonly whatsappHealthCheckQueue: Queue,
   ) {}
+
+  async onModuleInit(): Promise<void> {
+    try {
+      // Planifier la vérification quotidienne des essais à 6h UTC (BullMQ v5 upsertJobScheduler — idempotent)
+      await this.trialExpiryQueue.upsertJobScheduler(
+        'daily-trial-check',
+        { pattern: '0 6 * * *', tz: 'UTC' },
+        { name: 'check-trials', data: {} },
+      );
+      this.logger.log({ event: 'trial-expiry-scheduler-registered', pattern: '0 6 * * *' });
+    } catch (err) {
+      // Ne pas bloquer le démarrage si Redis est temporairement indisponible
+      this.logger.error({ event: 'trial-expiry-scheduler-failed', err });
+    }
+  }
 
   async enqueueWhatsappMessage(data: Record<string, unknown>): Promise<void> {
     try {

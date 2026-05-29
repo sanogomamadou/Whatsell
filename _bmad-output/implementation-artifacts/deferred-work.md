@@ -191,3 +191,28 @@
 - D-03: Validation MIME type via `file.mimetype` (Content-Type fourni par le client, spoofable) dans `settings.controller.ts` — limitation architecturale identique à `onboarding.controller.ts`. Solution : vérification magic-bytes côté serveur avec le package `file-type`. À traiter en Epic 3 (catalogue + uploads).
 - D-04: `logoUrl` stocke la clé R2 brute `{tenantId}/logos/{uuid}` et non une URL publique — même contrainte que D-03 story 2-4. Résolution : génération d'URL signée ou CDN public, à planifier quand le rendu des logos est requis.
 - D-05: `loadProfile` non-stabilisée (`useCallback` absent), warning ESLint supprimé via `// eslint-disable-next-line react-hooks/exhaustive-deps` — pattern pré-existant dans toutes les pages wizard. Mineur tant que la fonction ne capture pas de state supplémentaire.
+
+## Deferred from: code review of 2-8-notifications-essai-gratuit-et-expiration (2026-05-28)
+
+- W1: `TrialExpiryBanner` déclenche un appel API sur la homepage publique (non authentifiée) — l'erreur 401 est avalée silencieusement mais génère du bruit dans les logs. Problème d'architecture de la page d'accueil, à adresser quand un guard d'authentification sera ajouté à la home route.
+- W2: `TrialExpiryBanner` sans état de chargement — flash d'absence de bandeau sur réseau lent. Amélioration UX à intégrer avec les états de chargement globaux de l'app (Story 5.5 dashboard).
+- W3: `onFailed` dead-letter : `job.opts.attempts` peut être `undefined` sur les jobs créés par le scheduler BullMQ — comportement interne BullMQ incertain selon la version. À vérifier si dead-letter logging manqué en production.
+- W4: `RESEND_API_KEY` accepte une chaîne vide comme valeur par défaut (`.default('')`) — une variable `RESEND_API_KEY=` vide en `.env` est indiscernable d'une clé absente. Amélioration mineure : utiliser `z.string().min(1).optional()` pour détecter les blancs accidentels.
+
+## Configuration pré-production : Resend (email transactionnel)
+
+> **Contexte** : pendant les tests story 2.8, la config email utilise le domaine demo Resend (`onboarding@resend.dev`). Ce domaine ne peut pas être utilisé en production.
+
+**Actions requises avant le lancement :**
+
+1. **Enregistrer et vérifier un domaine** dans le dashboard Resend (ex: `whatsell.io` ou `mail.whatsell.io`)
+   - Ajouter les enregistrements DNS : SPF, DKIM (2 clés), DMARC
+   - Attendre la propagation DNS (jusqu'à 48h)
+
+2. **Mettre à jour les variables d'environnement** (Railway production) :
+   - `MAIL_FROM=Whatsell <noreply@whatsell.io>` (ou le domaine vérifié)
+   - `RESEND_API_KEY=re_...` (clé de production, pas la clé dev)
+
+3. **Note** : les adresses personnelles (gmail.com, yahoo.com, etc.) ne peuvent pas être utilisées comme `MAIL_FROM`. Resend exige un domaine dont vous avez le contrôle DNS.
+
+4. **Tarif Resend** : free tier = 3 000 emails/mois, 100/jour — suffisant pour le MVP. Plan suivant à 20 $/mois pour 50 000 emails/mois.

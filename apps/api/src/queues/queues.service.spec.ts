@@ -6,7 +6,7 @@ import { QueuesService } from './queues.service';
 describe('QueuesService', () => {
   let service: QueuesService;
 
-  const makeMockQueue = () => ({ add: jest.fn() });
+  const makeMockQueue = () => ({ add: jest.fn(), upsertJobScheduler: jest.fn() });
   let mockWhatsappQueue: ReturnType<typeof makeMockQueue>;
   let mockStockQueue: ReturnType<typeof makeMockQueue>;
   let mockAdvisorQueue: ReturnType<typeof makeMockQueue>;
@@ -36,6 +36,26 @@ describe('QueuesService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('onModuleInit', () => {
+    it('enregistre le scheduler quotidien sur la queue trial-expiry', async () => {
+      mockTrialQueue.upsertJobScheduler.mockResolvedValue(undefined);
+
+      await service.onModuleInit();
+
+      expect(mockTrialQueue.upsertJobScheduler).toHaveBeenCalledWith(
+        'daily-trial-check',
+        { pattern: '0 6 * * *', tz: 'UTC' },
+        { name: 'check-trials', data: {} },
+      );
+    });
+
+    it("ne lève pas d'erreur si upsertJobScheduler échoue (Redis indisponible)", async () => {
+      mockTrialQueue.upsertJobScheduler.mockRejectedValueOnce(new Error('Redis down'));
+
+      await expect(service.onModuleInit()).resolves.not.toThrow();
+    });
   });
 
   describe('enqueueWhatsappMessage', () => {

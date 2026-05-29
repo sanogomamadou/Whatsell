@@ -72,7 +72,7 @@ development_status:
   2-5-wizard-etape-4-regles-de-paiement: done
   2-6-wizard-etape-5-activation-de-lagent: done
   2-7-gestion-du-profil-et-reconnexion-whatsapp: done
-  2-8-notifications-essai-gratuit-et-expiration: backlog
+  2-8-notifications-essai-gratuit-et-expiration: done
   epic-2-retrospective: optional
 
   # ─────────────────────────────────────────────────────────────

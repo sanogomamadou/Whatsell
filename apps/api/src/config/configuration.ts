@@ -58,5 +58,10 @@ export default () => {
       vapidPrivateKey: process.env['VAPID_PRIVATE_KEY'] ?? '',
       vapidSubject: process.env['VAPID_SUBJECT'] ?? 'mailto:admin@whatsell.io',
     },
+
+    mail: {
+      resendApiKey: process.env['RESEND_API_KEY'] ?? '',
+      from: process.env['MAIL_FROM'] ?? 'Whatsell <noreply@whatsell.io>',
+    },
   };
 };

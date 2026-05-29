@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
+import { TrialExpiryBanner } from '@/components/shared';
 
 type ProfileSettings = {
   name: string;
@@ -192,6 +193,8 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-background flex flex-col items-center justify-start pt-8 px-4">
       <div className="w-full max-w-sm space-y-6">
         <h1 className="text-xl font-bold text-text-primary">Paramètres</h1>
+
+        <TrialExpiryBanner />
 
         {/* ── Section Profil Boutique ─────────────────────────────────────── */}
         <Card className="p-6">

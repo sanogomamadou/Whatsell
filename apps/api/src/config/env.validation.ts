@@ -57,6 +57,10 @@ const envSchema = z.object({
   VAPID_PUBLIC_KEY: z.string().optional().default(''),
   VAPID_PRIVATE_KEY: z.string().optional().default(''),
   VAPID_SUBJECT: z.string().optional().default('mailto:admin@whatsell.io'),
+
+  // Email transactionnel (Resend) — optionnel, dégradation gracieuse si absent
+  RESEND_API_KEY: z.string().optional().default(''),
+  MAIL_FROM: z.string().optional().default('Whatsell <noreply@whatsell.io>'),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

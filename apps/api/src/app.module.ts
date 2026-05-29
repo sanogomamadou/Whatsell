@@ -31,6 +31,8 @@ import { NotificationsController } from './modules/notifications/notifications.c
 import { AuditModule } from './modules/audit/audit.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { SettingsController } from './modules/settings/settings.controller';
+import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
+import { SubscriptionsController } from './modules/subscriptions/subscriptions.controller';
 
 @Module({
   imports: [
@@ -88,6 +90,7 @@ import { SettingsController } from './modules/settings/settings.controller';
     EventsModule,
     NotificationsModule,
     SettingsModule,
+    SubscriptionsModule,
   ],
   controllers: [AppController],
   providers: [
@@ -112,6 +115,6 @@ export class AppModule implements NestModule {
     // AuthController et AppController (health) sont naturellement exclus.
     consumer
       .apply(TenantMiddleware)
-      .forRoutes(OnboardingController, EventsController, NotificationsController, ProductsController, SettingsController);
+      .forRoutes(OnboardingController, EventsController, NotificationsController, ProductsController, SettingsController, SubscriptionsController);
   }
 }
