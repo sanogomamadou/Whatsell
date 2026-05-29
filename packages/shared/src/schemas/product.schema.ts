@@ -20,3 +20,22 @@ export const createProductSchema = z.object({
 });
 
 export type CreateProductDto = z.infer<typeof createProductSchema>;
+
+// Clé de variante libre — ex: "Standard", "Taille:L,Couleur:Rouge", "Volume:500ml"
+export const variantKeySchema = z.string().trim().min(1).max(200);
+
+export const createStockLevelSchema = z.object({
+  variantKey: variantKeySchema,
+  quantity: z.coerce.number().int().min(0, 'Le stock ne peut pas être négatif'),
+});
+export type CreateStockLevelDto = z.infer<typeof createStockLevelSchema>;
+
+export const updateStockLevelSchema = z.object({
+  quantity: z.coerce.number().int().min(0, 'Le stock ne peut pas être négatif'),
+});
+export type UpdateStockLevelDto = z.infer<typeof updateStockLevelSchema>;
+
+export const updateAlertThresholdSchema = z.object({
+  alertThreshold: z.coerce.number().int().min(0).max(9999),
+});
+export type UpdateAlertThresholdDto = z.infer<typeof updateAlertThresholdSchema>;

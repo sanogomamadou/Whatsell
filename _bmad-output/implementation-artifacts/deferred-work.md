@@ -199,6 +199,14 @@
 - W3: `onFailed` dead-letter : `job.opts.attempts` peut être `undefined` sur les jobs créés par le scheduler BullMQ — comportement interne BullMQ incertain selon la version. À vérifier si dead-letter logging manqué en production.
 - W4: `RESEND_API_KEY` accepte une chaîne vide comme valeur par défaut (`.default('')`) — une variable `RESEND_API_KEY=` vide en `.env` est indiscernable d'une clé absente. Amélioration mineure : utiliser `z.string().min(1).optional()` pour détecter les blancs accidentels.
 
+## Deferred from: code review of 3-1-schema-bdd-produits-et-variantes (2026-05-29)
+
+- D-01: `variantKeySchema` — espaces Unicode invisibles (U+00A0, U+200B) passent `.trim().min(1)` sans être rejetés — scope Story 3.3 (gestion variantes libres)
+- D-02: `updateStockLevelSchema`/`updateAlertThresholdSchema` définis mais sans endpoint consommateur — à câbler dans le controller lors des Stories 3.3–3.5
+- D-03: Pas de `.max()` sur `quantity` dans `createStockLevelSchema`/`updateStockLevelSchema` — overflow Postgres Int (>2 147 483 647) lèverait une erreur DB plutôt qu'une erreur de validation — à traiter Story 3.2 CRUD
+- D-04: Guard `page=0`/négatif absent dans `ProductsRepository.findByTenantId` — `skip = (page-1)*limit` devient négatif si `page=0`, Prisma lance une erreur runtime — pré-existant Story 2.4, à corriger Story 3.2 controller
+- D-05: Mock `$transaction` dans les tests pointe sur le même objet que `mockPrismaService` — les appels `tx.X` et `this.prisma.X` ne sont pas distingués, limitant la couverture de l'atomicité — à améliorer si la logique transactionnelle s'étend
+
 ## Configuration pré-production : Resend (email transactionnel)
 
 > **Contexte** : pendant les tests story 2.8, la config email utilise le domaine demo Resend (`onboarding@resend.dev`). Ce domaine ne peut pas être utilisé en production.
