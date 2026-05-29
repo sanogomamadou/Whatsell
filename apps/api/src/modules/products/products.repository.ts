@@ -14,6 +14,20 @@ type ProductListResult = {
   total: number;
 };
 
+type StockLevelSummary = {
+  id: string;
+  variantKey: string;
+  quantity: number;
+  alertThreshold: number;
+};
+
+export type ProductDetail = ProductResult & {
+  description: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  stockLevels: StockLevelSummary[];
+};
+
 @Injectable()
 export class ProductsRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -52,16 +66,68 @@ export class ProductsRepository {
     page: number,
     limit: number,
   ): Promise<ProductListResult> {
+    page = Math.max(1, page);
     const [items, total] = await Promise.all([
       this.prisma.product.findMany({
-        where: { tenantId, isActive: true },
+        where: { tenantId },
         select: { id: true, name: true, basePrice: true, imageUrl: true, isActive: true },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
       }),
-      this.prisma.product.count({ where: { tenantId, isActive: true } }),
+      this.prisma.product.count({ where: { tenantId } }),
     ]);
     return { items, total };
+  }
+
+  async findByIdAndTenant(id: string, tenantId: string): Promise<ProductDetail | null> {
+    return this.prisma.product.findFirst({
+      where: { id, tenantId },
+      select: {
+        id: true,
+        name: true,
+        basePrice: true,
+        description: true,
+        imageUrl: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+        stockLevels: {
+          select: { id: true, variantKey: true, quantity: true, alertThreshold: true },
+          orderBy: { variantKey: 'asc' },
+        },
+      },
+    });
+  }
+
+  async updateById(
+    id: string,
+    tenantId: string,
+    data: { name?: string; basePrice?: number; description?: string | null; imageUrl?: string },
+  ): Promise<ProductResult> {
+    return this.prisma.product.update({
+      where: { id, tenantId },
+      data,
+      select: { id: true, name: true, basePrice: true, imageUrl: true, isActive: true },
+    });
+  }
+
+  async deleteById(id: string, tenantId: string): Promise<{ id: string }> {
+    await this.prisma.product.delete({ where: { id, tenantId } });
+    return { id };
+  }
+
+  async toggleActive(id: string, tenantId: string): Promise<ProductResult | null> {
+    const product = await this.prisma.product.findFirst({
+      where: { id, tenantId },
+      select: { isActive: true },
+    });
+    if (!product) return null;
+
+    return this.prisma.product.update({
+      where: { id, tenantId },
+      data: { isActive: !product.isActive },
+      select: { id: true, name: true, basePrice: true, imageUrl: true, isActive: true },
+    });
   }
 }

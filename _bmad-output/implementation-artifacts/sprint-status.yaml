@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-15T00:00:00Z
-last_updated: 2026-05-29T10:00:00Z
+last_updated: 2026-05-29T16:00:00Z
 project: Whatsell
 project_key: NOKEY
 tracking_system: file-system
@@ -80,7 +80,7 @@ development_status:
   # ─────────────────────────────────────────────────────────────
   epic-3: in-progress
   3-1-schema-bdd-produits-et-variantes: done
-  3-2-crud-produits-backend-api: backlog
+  3-2-crud-produits-backend-api: done
   3-3-gestion-des-variantes-libres: backlog
   3-4-gestion-des-niveaux-de-stock: backlog
   3-5-alertes-de-rupture-de-stock: backlog

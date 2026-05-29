@@ -1,7 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
+  Patch,
   Post,
   Query,
   UnsupportedMediaTypeException,
@@ -62,5 +65,45 @@ export class ProductsController {
     const page = Math.max(1, parseInt(pageStr, 10) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(limitStr, 10) || 20));
     return this.productsService.getProducts(tenantId, page, limit);
+  }
+
+  @Get(':id')
+  async getProduct(
+    @CurrentTenant() tenantId: string,
+    @Param('id') id: string,
+  ) {
+    return this.productsService.getProductById(tenantId, id);
+  }
+
+  @Patch(':id')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: imageFilter,
+    }),
+  )
+  async updateProduct(
+    @CurrentTenant() tenantId: string,
+    @Param('id') id: string,
+    @Body() body: unknown,
+    @UploadedFile() image?: Express.Multer.File,
+  ) {
+    return this.productsService.updateProduct(tenantId, id, body, image);
+  }
+
+  @Delete(':id')
+  async deleteProduct(
+    @CurrentTenant() tenantId: string,
+    @Param('id') id: string,
+  ) {
+    return this.productsService.deleteProduct(tenantId, id);
+  }
+
+  @Patch(':id/toggle')
+  async toggleProduct(
+    @CurrentTenant() tenantId: string,
+    @Param('id') id: string,
+  ) {
+    return this.productsService.toggleProduct(tenantId, id);
   }
 }

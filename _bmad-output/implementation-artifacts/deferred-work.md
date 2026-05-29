@@ -207,6 +207,12 @@
 - D-04: Guard `page=0`/négatif absent dans `ProductsRepository.findByTenantId` — `skip = (page-1)*limit` devient négatif si `page=0`, Prisma lance une erreur runtime — pré-existant Story 2.4, à corriger Story 3.2 controller
 - D-05: Mock `$transaction` dans les tests pointe sur le même objet que `mockPrismaService` — les appels `tx.X` et `this.prisma.X` ne sont pas distingués, limitant la couverture de l'atomicité — à améliorer si la logique transactionnelle s'étend
 
+## Deferred from: code review of 3-2-crud-produits-backend-api (2026-05-29)
+
+- D-01: Double-fetch dans `deleteProduct`/`toggleProduct` — 2 appels DB (findByIdAndTenant puis deleteById/toggleActive), catcher P2025 serait plus efficace mais pattern pre-existant accepté en V1. **Why:** pré-check intentionnel pour distinguer 404 vs 500 sans dépendre des codes d'erreur Prisma. [products.service.ts]
+- D-02: Pas de moyen d'effacer `imageUrl` existante via PATCH — `updateProductSchema` n'expose pas de champ `imageUrl: null`. Gap design produit. **Why:** hors scope story 3.2, à traiter lors de la story frontend catalogue (3.6) si le besoin est confirmé. [products.service.ts:updateProduct]
+- D-03: `deleteById` retourne `{ id }` depuis le paramètre d'entrée et non depuis le retour Prisma — correct en pratique car Prisma lève toujours P2025 en cas d'échec. Mineur. [products.repository.ts:deleteById]
+
 ## Configuration pré-production : Resend (email transactionnel)
 
 > **Contexte** : pendant les tests story 2.8, la config email utilise le domaine demo Resend (`onboarding@resend.dev`). Ce domaine ne peut pas être utilisé en production.

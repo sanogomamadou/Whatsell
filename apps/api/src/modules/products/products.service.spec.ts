@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProductsService } from './products.service';
 import { ProductsRepository } from './products.repository';
@@ -9,6 +9,10 @@ import { StorageService } from '../../common/services/storage.service';
 const mockProductsRepository = {
   createProductWithDefaultVariant: jest.fn(),
   findByTenantId: jest.fn(),
+  findByIdAndTenant: jest.fn(),
+  updateById: jest.fn(),
+  deleteById: jest.fn(),
+  toggleActive: jest.fn(),
 };
 
 const mockStorageService = {
@@ -18,13 +22,24 @@ const mockStorageService = {
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 
 const TENANT_ID = 'tenant-uuid-1';
+const PRODUCT_ID = 'product-uuid-1';
 
 const PRODUCT_RESULT = {
-  id: 'product-uuid-1',
+  id: PRODUCT_ID,
   name: 'Boubou Bazin Bleu',
   basePrice: 15000,
   imageUrl: null,
   isActive: true,
+};
+
+const PRODUCT_DETAIL = {
+  ...PRODUCT_RESULT,
+  description: 'Bazin Riche qualité premium',
+  createdAt: new Date('2026-05-29T10:00:00Z'),
+  updatedAt: new Date('2026-05-29T10:00:00Z'),
+  stockLevels: [
+    { id: 'stock-uuid-1', variantKey: 'Standard', quantity: 10, alertThreshold: 5 },
+  ],
 };
 
 const mockImageFile = {
@@ -45,6 +60,10 @@ describe('ProductsService', () => {
     jest.clearAllMocks();
     mockProductsRepository.createProductWithDefaultVariant.mockResolvedValue(PRODUCT_RESULT);
     mockProductsRepository.findByTenantId.mockResolvedValue({ items: [PRODUCT_RESULT], total: 1 });
+    mockProductsRepository.findByIdAndTenant.mockResolvedValue(PRODUCT_DETAIL);
+    mockProductsRepository.updateById.mockResolvedValue(PRODUCT_RESULT);
+    mockProductsRepository.deleteById.mockResolvedValue({ id: PRODUCT_ID });
+    mockProductsRepository.toggleActive.mockResolvedValue({ ...PRODUCT_RESULT, isActive: false });
     mockStorageService.upload.mockResolvedValue('https://cdn.example.com/products/produit.png');
 
     const module: TestingModule = await Test.createTestingModule({
@@ -159,6 +178,129 @@ describe('ProductsService', () => {
         data: [PRODUCT_RESULT],
         meta: { total: 1, page: 1, limit: 20 },
       });
+    });
+  });
+
+  // ─── getProductById ───────────────────────────────────────────────────────
+
+  describe('getProductById', () => {
+    it('id valide du tenant → retourne le produit avec stockLevels', async () => {
+      const result = await service.getProductById(TENANT_ID, PRODUCT_ID);
+
+      expect(mockProductsRepository.findByIdAndTenant).toHaveBeenCalledWith(PRODUCT_ID, TENANT_ID);
+      expect(result).toEqual(PRODUCT_DETAIL);
+    });
+
+    it('id absent ou cross-tenant → NotFoundException', async () => {
+      mockProductsRepository.findByIdAndTenant.mockResolvedValue(null);
+
+      await expect(service.getProductById(TENANT_ID, 'unknown-id')).rejects.toThrow(NotFoundException);
+      expect(mockProductsRepository.findByIdAndTenant).toHaveBeenCalledWith('unknown-id', TENANT_ID);
+    });
+  });
+
+  // ─── updateProduct ────────────────────────────────────────────────────────
+
+  describe('updateProduct', () => {
+    it('données valides → updateById appelé, retourne le produit mis à jour', async () => {
+      const updated = { ...PRODUCT_RESULT, name: 'Nouveau Nom' };
+      mockProductsRepository.updateById.mockResolvedValue(updated);
+
+      const result = await service.updateProduct(TENANT_ID, PRODUCT_ID, { name: 'Nouveau Nom' });
+
+      expect(mockProductsRepository.findByIdAndTenant).toHaveBeenCalledWith(PRODUCT_ID, TENANT_ID);
+      expect(mockProductsRepository.updateById).toHaveBeenCalledWith(
+        PRODUCT_ID,
+        TENANT_ID,
+        expect.objectContaining({ name: 'Nouveau Nom' }),
+      );
+      expect(result).toEqual(updated);
+    });
+
+    it('basePrice = 0 → BadRequestException, repository non modifié', async () => {
+      await expect(
+        service.updateProduct(TENANT_ID, PRODUCT_ID, { basePrice: 0 }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockProductsRepository.updateById).not.toHaveBeenCalled();
+    });
+
+    it('produit absent → NotFoundException avant update', async () => {
+      mockProductsRepository.findByIdAndTenant.mockResolvedValue(null);
+
+      await expect(
+        service.updateProduct(TENANT_ID, 'unknown-id', { name: 'Nouveau Nom' }),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(mockProductsRepository.updateById).not.toHaveBeenCalled();
+    });
+
+    it('avec image valide → upload R2 appelé, imageUrl transmise', async () => {
+      await service.updateProduct(TENANT_ID, PRODUCT_ID, { name: 'Test' }, mockImageFile);
+
+      expect(mockStorageService.upload).toHaveBeenCalledWith(
+        TENANT_ID,
+        'products',
+        mockImageFile.buffer,
+        mockImageFile.mimetype,
+      );
+      expect(mockProductsRepository.updateById).toHaveBeenCalledWith(
+        PRODUCT_ID,
+        TENANT_ID,
+        expect.objectContaining({ imageUrl: 'https://cdn.example.com/products/produit.png' }),
+      );
+    });
+
+    it('payload vide {} → BadRequestException, updateById non appelé', async () => {
+      await expect(
+        service.updateProduct(TENANT_ID, PRODUCT_ID, {}),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockProductsRepository.updateById).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─── deleteProduct ────────────────────────────────────────────────────────
+
+  describe('deleteProduct', () => {
+    it('id valide → deleteById appelé, retourne { id }', async () => {
+      const result = await service.deleteProduct(TENANT_ID, PRODUCT_ID);
+
+      expect(mockProductsRepository.findByIdAndTenant).toHaveBeenCalledWith(PRODUCT_ID, TENANT_ID);
+      expect(mockProductsRepository.deleteById).toHaveBeenCalledWith(PRODUCT_ID, TENANT_ID);
+      expect(result).toEqual({ id: PRODUCT_ID });
+    });
+
+    it('produit absent → NotFoundException, deleteById non appelé', async () => {
+      mockProductsRepository.findByIdAndTenant.mockResolvedValue(null);
+
+      await expect(service.deleteProduct(TENANT_ID, 'unknown-id')).rejects.toThrow(NotFoundException);
+      expect(mockProductsRepository.deleteById).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─── toggleProduct ────────────────────────────────────────────────────────
+
+  describe('toggleProduct', () => {
+    it('produit actif → toggleActive appelé, retourne produit avec isActive=false', async () => {
+      const result = await service.toggleProduct(TENANT_ID, PRODUCT_ID);
+
+      expect(mockProductsRepository.findByIdAndTenant).toHaveBeenCalledWith(PRODUCT_ID, TENANT_ID);
+      expect(mockProductsRepository.toggleActive).toHaveBeenCalledWith(PRODUCT_ID, TENANT_ID);
+      expect(result.isActive).toBe(false);
+    });
+
+    it('produit absent → NotFoundException, toggleActive non appelé', async () => {
+      mockProductsRepository.findByIdAndTenant.mockResolvedValue(null);
+
+      await expect(service.toggleProduct(TENANT_ID, 'unknown-id')).rejects.toThrow(NotFoundException);
+      expect(mockProductsRepository.toggleActive).not.toHaveBeenCalled();
+    });
+
+    it('toggleActive retourne null (race TOCTOU) → NotFoundException', async () => {
+      mockProductsRepository.toggleActive.mockResolvedValue(null);
+
+      await expect(service.toggleProduct(TENANT_ID, PRODUCT_ID)).rejects.toThrow(NotFoundException);
     });
   });
 });
