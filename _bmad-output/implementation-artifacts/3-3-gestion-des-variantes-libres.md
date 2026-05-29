@@ -1,6 +1,6 @@
 # Story 3.3 : Gestion des Variantes Libres
 
-Status: review
+Status: done
 
 ## Story
 
@@ -113,7 +113,7 @@ afin que mon agent IA puisse guider les clients dans le choix de la bonne varian
 
 ### Review Findings
 
-- [ ] [Review][Patch] Migration `add_stock_level_is_active` non stagée dans git [`apps/api/prisma/migrations/20260529082551_add_stock_level_is_active/`]
+- [x] [Review][Patch] Migration `add_stock_level_is_active` non stagée dans git [`apps/api/prisma/migrations/20260529082551_add_stock_level_is_active/`]
 - [x] [Review][Defer] `countOrderItemsByVariantId` stub → soft-delete (AC5) inatteignable en prod [`apps/api/src/modules/products/products.repository.ts`] — deferred, intentionnel per spec, Story 4.1 remplacera le stub
 - [x] [Review][Defer] Race condition TOCTOU count→deleteVariantById [`apps/api/src/modules/products/products.service.ts`] — deferred, seulement pertinent après Story 4.1
 - [x] [Review][Defer] Race condition P2003 FK : produit supprimé entre existence check et addVariantToProduct [`apps/api/src/modules/products/products.service.ts`] — deferred, très faible probabilité
